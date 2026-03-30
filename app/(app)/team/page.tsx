@@ -389,7 +389,7 @@ export default function TeamPage() {
                           return (
                             <div className="text-right">
                               <p className="text-sm font-medium text-gray-400">미투입</p>
-                              <p className="text-xs text-gray-400">최종 마감일</p>
+                              <p className="text-xs text-gray-400">최종 투입일</p>
                             </div>
                           )
                         }
@@ -406,7 +406,7 @@ export default function TeamPage() {
                             <p className={`text-sm font-medium ${isOverdue ? 'text-red-500' : 'text-gray-900'}`}>
                               {latestDate ? formatDate(latestDate.toISOString()) : '-'}
                             </p>
-                            <p className="text-xs text-gray-500">최종 마감일</p>
+                            <p className="text-xs text-gray-500">최종 투입일</p>
                           </div>
                         )
                       })()}
