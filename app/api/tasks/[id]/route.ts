@@ -9,19 +9,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params
   const body = await req.json()
 
-  const task = await prisma.task.update({
-    where: { id },
-    data: {
-      title: body.title,
-      description: body.description,
-      status: body.status,
-      priority: body.priority,
-      startDate: body.startDate ? new Date(body.startDate) : null,
-      dueDate: body.dueDate ? new Date(body.dueDate) : null,
-      progressPercent: body.progressPercent,
-      estimatedHours: body.estimatedHours,
-    },
-  })
+  const data: Record<string, unknown> = {}
+  if (body.title !== undefined)         data.title = body.title
+  if (body.description !== undefined)   data.description = body.description
+  if (body.status !== undefined)        data.status = body.status
+  if (body.priority !== undefined)      data.priority = body.priority
+  if ('startDate' in body)              data.startDate = body.startDate ? new Date(body.startDate) : null
+  if ('dueDate' in body)                data.dueDate = body.dueDate ? new Date(body.dueDate) : null
+  if (body.progressPercent !== undefined) data.progressPercent = body.progressPercent
+  if (body.estimatedHours !== undefined)  data.estimatedHours = body.estimatedHours
+
+  const task = await prisma.task.update({ where: { id }, data })
 
   if (body.assigneeIds !== undefined) {
     await prisma.taskAssignee.deleteMany({ where: { taskId: id } })
