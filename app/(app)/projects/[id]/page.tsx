@@ -66,7 +66,7 @@ function TaskRow({
   onUpdate: (id: string, data: any) => void
   onAddSubtask: (parentId: string) => void
   onDelete: (id: string) => void
-  onEdit: (task: Task) => void
+  onEdit: (task: Task, parent?: Task) => void
 }) {
   const [expanded, setExpanded] = useState(true)
   const [editingProgress, setEditingProgress] = useState(false)
@@ -179,7 +179,7 @@ function TaskRow({
           onUpdate={onUpdate}
           onAddSubtask={onAddSubtask}
           onDelete={onDelete}
-          onEdit={onEdit}
+          onEdit={(editTask) => onEdit(editTask, task)}
         />
       ))}
     </>
@@ -341,12 +341,14 @@ function AddTaskModal({
 
 function EditTaskModal({
   task,
+  parentTask,
   members,
   allUsers,
   onClose,
   onSave,
 }: {
   task: Task
+  parentTask?: Task
   members: Member[]
   allUsers: Member[]
   onClose: () => void
@@ -361,6 +363,7 @@ function EditTaskModal({
     estimatedHours: task.estimatedHours != null ? String(task.estimatedHours) : '',
     assigneeIds: task.assignees.map((a) => a.user.id),
   })
+  const [dateAlert, setDateAlert] = useState<string | null>(null)
 
   const toggleAssignee = (userId: string) => {
     setForm((f) => ({
@@ -371,8 +374,30 @@ function EditTaskModal({
     }))
   }
 
+  const validateDates = (): string | null => {
+    if (!parentTask) return null
+    const parentStart = parentTask.startDate ? parentTask.startDate.slice(0, 10) : null
+    const parentEnd = parentTask.dueDate ? parentTask.dueDate.slice(0, 10) : null
+
+    if (form.startDate && parentStart && form.startDate < parentStart) {
+      return `시작일(${form.startDate})이 상위 과제 시작일(${parentStart})보다 앞설 수 없습니다.`
+    }
+    if (form.dueDate && parentEnd && form.dueDate > parentEnd) {
+      return `마감일(${form.dueDate})이 상위 과제 마감일(${parentEnd})을 초과할 수 없습니다.`
+    }
+    if (form.startDate && form.dueDate && form.startDate > form.dueDate) {
+      return '시작일은 마감일보다 이전이어야 합니다.'
+    }
+    return null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const error = validateDates()
+    if (error) {
+      setDateAlert(error)
+      return
+    }
     await fetch(`/api/tasks/${task.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -388,7 +413,25 @@ function EditTaskModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-        <h3 className="font-semibold text-gray-800 mb-4">과제 수정</h3>
+        <h3 className="font-semibold text-gray-800 mb-4">
+          {parentTask ? `상세 일정 수정 — ${task.title}` : '과제 수정'}
+        </h3>
+        {parentTask && (parentTask.startDate || parentTask.dueDate) && (
+          <p className="text-xs text-indigo-600 bg-indigo-50 rounded-lg px-3 py-2 mb-3">
+            상위 과제 허용 기간: {parentTask.startDate?.slice(0, 10) ?? '?'} ~ {parentTask.dueDate?.slice(0, 10) ?? '?'}
+          </p>
+        )}
+        {/* 날짜 오류 안내 팝업 */}
+        {dateAlert && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 mb-3">
+            <span className="text-red-500 text-base leading-none mt-0.5">⚠</span>
+            <div>
+              <p className="text-sm font-medium text-red-700">일정 범위 초과</p>
+              <p className="text-xs text-red-600 mt-0.5">{dateAlert}</p>
+            </div>
+            <button onClick={() => setDateAlert(null)} className="ml-auto text-red-400 hover:text-red-600 text-lg leading-none">×</button>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
             className="w-full border rounded-lg px-3 py-2 text-sm"
@@ -421,12 +464,18 @@ function EditTaskModal({
             <div>
               <label className="text-xs text-gray-500">시작일</label>
               <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+                value={form.startDate}
+                min={parentTask?.startDate?.slice(0, 10)}
+                max={parentTask?.dueDate?.slice(0, 10)}
+                onChange={(e) => { setDateAlert(null); setForm({ ...form, startDate: e.target.value }) }} />
             </div>
             <div>
               <label className="text-xs text-gray-500">마감일</label>
               <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+                value={form.dueDate}
+                min={parentTask?.startDate?.slice(0, 10)}
+                max={parentTask?.dueDate?.slice(0, 10)}
+                onChange={(e) => { setDateAlert(null); setForm({ ...form, dueDate: e.target.value }) }} />
             </div>
           </div>
           <div>
@@ -638,6 +687,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [allUsers, setAllUsers] = useState<Member[]>([])
   const [showAddTask, setShowAddTask] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [editingTaskParent, setEditingTaskParent] = useState<Task | undefined>(undefined)
   const [addingSubtaskTo, setAddingSubtaskTo] = useState<string | undefined>()
   const [activeTab, setActiveTab] = useState<'tasks' | 'gantt' | 'issues'>('tasks')
 
@@ -787,7 +837,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       onUpdate={handleUpdateTask}
                       onAddSubtask={(parentId) => { setAddingSubtaskTo(parentId); setShowAddTask(true) }}
                       onDelete={handleDeleteTask}
-                      onEdit={setEditingTask}
+                      onEdit={(task, parent) => { setEditingTask(task); setEditingTaskParent(parent) }}
                     />
                   ))}
                 </tbody>
@@ -855,9 +905,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         {editingTask && (
           <EditTaskModal
             task={editingTask}
+            parentTask={editingTaskParent}
             members={project.members.map((m) => m.user)}
             allUsers={allUsers}
-            onClose={() => setEditingTask(null)}
+            onClose={() => { setEditingTask(null); setEditingTaskParent(undefined) }}
             onSave={fetchProject}
           />
         )}
