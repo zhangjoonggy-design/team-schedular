@@ -18,9 +18,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           include: {
             subTasks: {
               include: {
+                subTasks: true,
                 assignees: { include: { user: { select: { id: true, name: true, avatarColor: true } } } },
                 issues: true,
               },
+              orderBy: { createdAt: 'asc' },
             },
             assignees: { include: { user: { select: { id: true, name: true, avatarColor: true } } } },
             issues: true,

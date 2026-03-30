@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+const PHASES = [
+  { name: '분석',   ratio: 0.15 },
+  { name: '설계',   ratio: 0.20 },
+  { name: '구현',   ratio: 0.30 },
+  { name: '테스트', ratio: 0.25 },
+  { name: '이행',   ratio: 0.03 },
+  { name: '안정화', ratio: 0.07 },
+]
+
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -27,6 +36,37 @@ export async function POST(req: NextRequest) {
     await prisma.taskAssignee.createMany({
       data: body.assigneeIds.map((userId: string) => ({ taskId: task.id, userId })),
     })
+  }
+
+  // 최상위 과제에 시작일·마감일이 있으면 단계별 일정을 하위 과제로 자동 생성
+  if (!body.parentTaskId && body.startDate && body.dueDate) {
+    const start = new Date(body.startDate)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(body.dueDate)
+    end.setHours(0, 0, 0, 0)
+    const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1
+
+    let cursor = new Date(start)
+    for (const phase of PHASES) {
+      const days = Math.max(1, Math.round(totalDays * phase.ratio))
+      const phaseEnd = new Date(cursor)
+      phaseEnd.setDate(phaseEnd.getDate() + days - 1)
+
+      await prisma.task.create({
+        data: {
+          projectId: body.projectId,
+          parentTaskId: task.id,
+          title: phase.name,
+          status: 'TODO',
+          priority: body.priority ?? 'MEDIUM',
+          startDate: new Date(cursor),
+          dueDate: new Date(phaseEnd),
+          progressPercent: 0,
+        },
+      })
+
+      cursor.setDate(cursor.getDate() + days)
+    }
   }
 
   return NextResponse.json(task, { status: 201 })

@@ -9,6 +9,16 @@ import { formatDate, STATUS_LABELS, PRIORITY_LABELS, PRIORITY_COLORS } from '@/l
 import { ChevronDown, ChevronRight, Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+const PHASE_COLORS: Record<string, string> = {
+  '분석':   '#3b82f6',
+  '설계':   '#8b5cf6',
+  '구현':   '#22c55e',
+  '테스트': '#f59e0b',
+  '이행':   '#ef4444',
+  '안정화': '#14b8a6',
+}
+const PHASE_NAMES = ['분석', '설계', '구현', '테스트', '이행', '안정화']
+
 interface Task {
   id: string
   title: string
@@ -470,6 +480,154 @@ function EditTaskModal({
   )
 }
 
+function GanttChart({ tasks }: { tasks: Task[] }) {
+  const DAY_MS = 86400000
+  const tasksWithDates = tasks.filter((t) => t.startDate && t.dueDate)
+
+  if (tasksWithDates.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-400 text-sm">
+        시작일과 마감일이 설정된 과제가 없습니다.
+      </div>
+    )
+  }
+
+  const allTs = tasksWithDates.flatMap((t) => {
+    const pts = [new Date(t.startDate!).getTime(), new Date(t.dueDate!).getTime()]
+    ;(t.subTasks ?? []).forEach((s) => {
+      if (s.startDate) pts.push(new Date(s.startDate).getTime())
+      if (s.dueDate) pts.push(new Date(s.dueDate).getTime())
+    })
+    return pts
+  })
+
+  const chartStart = new Date(Math.min(...allTs))
+  chartStart.setDate(chartStart.getDate() - 3)
+  chartStart.setHours(0, 0, 0, 0)
+  const chartEnd = new Date(Math.max(...allTs))
+  chartEnd.setDate(chartEnd.getDate() + 3)
+  chartEnd.setHours(0, 0, 0, 0)
+
+  const totalDays = Math.ceil((chartEnd.getTime() - chartStart.getTime()) / DAY_MS)
+  const dayW = totalDays <= 30 ? 24 : totalDays <= 90 ? 16 : totalDays <= 180 ? 10 : 6
+  const chartWidth = totalDays * dayW
+
+  const getX = (date: string | null) => {
+    if (!date) return 0
+    const d = new Date(date); d.setHours(0, 0, 0, 0)
+    return Math.round((d.getTime() - chartStart.getTime()) / DAY_MS) * dayW
+  }
+  const getW = (s: string, e: string) => {
+    const sd = new Date(s); sd.setHours(0, 0, 0, 0)
+    const ed = new Date(e); ed.setHours(0, 0, 0, 0)
+    return Math.max(dayW, (Math.round((ed.getTime() - sd.getTime()) / DAY_MS) + 1) * dayW)
+  }
+
+  const months: { label: string; x: number; w: number }[] = []
+  const mc = new Date(chartStart.getFullYear(), chartStart.getMonth(), 1)
+  while (mc <= chartEnd) {
+    const nx = new Date(mc.getFullYear(), mc.getMonth() + 1, 1)
+    const x = Math.max(0, Math.round((mc.getTime() - chartStart.getTime()) / DAY_MS)) * dayW
+    const ex = Math.min(chartWidth, Math.round((nx.getTime() - chartStart.getTime()) / DAY_MS) * dayW)
+    months.push({ label: `${mc.getFullYear()}.${String(mc.getMonth() + 1).padStart(2, '0')}`, x, w: ex - x })
+    mc.setMonth(mc.getMonth() + 1)
+  }
+
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const todayX = today >= chartStart && today <= chartEnd
+    ? Math.round((today.getTime() - chartStart.getTime()) / DAY_MS) * dayW
+    : null
+
+  const NAME_W = 192
+
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <div style={{ minWidth: NAME_W + chartWidth }}>
+          {/* 헤더 */}
+          <div className="flex border-b border-gray-200 bg-gray-50 sticky top-0 z-10">
+            <div className="flex-shrink-0 py-2 px-3 text-xs font-medium text-gray-500 border-r border-gray-200" style={{ width: NAME_W }}>
+              과제명
+            </div>
+            <div className="flex" style={{ width: chartWidth }}>
+              {months.map((m, i) => (
+                <div key={i} style={{ width: m.w, minWidth: m.w }} className="py-2 px-2 text-xs font-medium text-gray-500 border-r border-gray-100 truncate">
+                  {m.label}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 과제 행 */}
+          {tasksWithDates.map((task) => {
+            const phases = (task.subTasks ?? [])
+              .filter((s) => PHASE_NAMES.includes(s.title) && s.startDate && s.dueDate)
+              .sort((a, b) => PHASE_NAMES.indexOf(a.title) - PHASE_NAMES.indexOf(b.title))
+
+            return (
+              <div key={task.id} className="flex items-center border-b border-gray-100 hover:bg-indigo-50/30" style={{ minHeight: 56 }}>
+                <div className="flex-shrink-0 py-2 px-3 border-r border-gray-100" style={{ width: NAME_W }}>
+                  <p className="text-sm font-medium text-gray-800 truncate" title={task.title}>{task.title}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{formatDate(task.startDate)} ~ {formatDate(task.dueDate)}</p>
+                </div>
+                <div className="relative flex-shrink-0" style={{ width: chartWidth, height: 56 }}>
+                  {/* 월 구분선 */}
+                  {months.map((m, i) => (
+                    <div key={i} className="absolute top-0 bottom-0 border-r border-gray-100" style={{ left: m.x + m.w }} />
+                  ))}
+                  {/* 오늘 선 */}
+                  {todayX !== null && (
+                    <div className="absolute top-0 bottom-0 w-px bg-red-400 opacity-70 z-10" style={{ left: todayX }} />
+                  )}
+                  {/* 전체 기간 배경바 */}
+                  <div className="absolute rounded-full opacity-10"
+                    style={{ left: getX(task.startDate), width: getW(task.startDate!, task.dueDate!), top: '50%', transform: 'translateY(-50%)', height: 30, backgroundColor: '#6366f1' }} />
+                  {/* 단계 바 */}
+                  {phases.length > 0 ? phases.map((phase) => (
+                    <div key={phase.id}
+                      className="absolute rounded-sm flex items-center overflow-hidden cursor-default"
+                      style={{
+                        left: getX(phase.startDate),
+                        width: getW(phase.startDate!, phase.dueDate!),
+                        top: '50%', transform: 'translateY(-50%)',
+                        height: 30,
+                        backgroundColor: PHASE_COLORS[phase.title] ?? '#6366f1',
+                      }}
+                      title={`${phase.title}: ${formatDate(phase.startDate)} ~ ${formatDate(phase.dueDate)}`}
+                    >
+                      <span className="text-white text-[10px] font-semibold px-1.5 truncate select-none">{phase.title}</span>
+                    </div>
+                  )) : (
+                    <div className="absolute rounded-sm flex items-center overflow-hidden"
+                      style={{ left: getX(task.startDate), width: getW(task.startDate!, task.dueDate!), top: '50%', transform: 'translateY(-50%)', height: 30, backgroundColor: '#6366f1' }}>
+                      <span className="text-white text-[10px] font-semibold px-1.5 truncate select-none">{task.title}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      {/* 범례 */}
+      <div className="flex flex-wrap gap-4 px-4 py-3 border-t border-gray-100 bg-gray-50">
+        {PHASE_NAMES.map((name) => (
+          <div key={name} className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: PHASE_COLORS[name] }} />
+            <span className="text-xs text-gray-600">{name}</span>
+          </div>
+        ))}
+        {todayX !== null && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 bg-red-400 flex-shrink-0" />
+            <span className="text-xs text-gray-600">오늘</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [project, setProject] = useState<Project | null>(null)
@@ -477,7 +635,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [showAddTask, setShowAddTask] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [addingSubtaskTo, setAddingSubtaskTo] = useState<string | undefined>()
-  const [activeTab, setActiveTab] = useState<'tasks' | 'issues'>('tasks')
+  const [activeTab, setActiveTab] = useState<'tasks' | 'gantt' | 'issues'>('tasks')
 
   const fetchProject = async () => {
     const res = await fetch(`/api/projects/${id}`)
@@ -578,6 +736,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             과제 목록
           </button>
           <button
+            onClick={() => setActiveTab('gantt')}
+            className={cn('px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
+              activeTab === 'gantt' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')}
+          >
+            간트 차트
+          </button>
+          <button
             onClick={() => setActiveTab('issues')}
             className={cn('px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
               activeTab === 'issues' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')}
@@ -627,6 +792,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <div className="text-center py-12 text-gray-400 text-sm">과제가 없습니다. 과제를 추가해보세요.</div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'gantt' && (
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="p-4 border-b border-gray-100">
+              <h2 className="font-semibold text-gray-800">단계별 간트 차트</h2>
+              <p className="text-xs text-gray-400 mt-0.5">분석 15% · 설계 20% · 구현 30% · 테스트 25% · 이행 3% · 안정화 7%</p>
+            </div>
+            <GanttChart tasks={project.tasks} />
           </div>
         )}
 
