@@ -382,12 +382,43 @@ export default function TeamPage() {
                       </div>
                       <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
-                    <div className="ml-auto text-right pr-5">
-                      <p className="text-lg font-bold text-gray-900">{activeTasks.length}</p>
-                      <p className="text-xs text-gray-500">진행중 과제</p>
-                      {overdueTasks.length > 0 && (
-                        <p className="text-xs text-red-500 font-medium">{overdueTasks.length}개 지연</p>
-                      )}
+                    <div className="ml-auto flex items-center gap-4 pr-5">
+                      {/* 최종 마감일 */}
+                      {(() => {
+                        if (activeTasks.length === 0) {
+                          return (
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-gray-400">미투입</p>
+                              <p className="text-xs text-gray-400">최종 마감일</p>
+                            </div>
+                          )
+                        }
+                        const dueDates = activeTasks
+                          .map(a => a.task.dueDate)
+                          .filter(Boolean)
+                          .map(d => new Date(d!))
+                        const latestDate = dueDates.length > 0
+                          ? new Date(Math.max(...dueDates.map(d => d.getTime())))
+                          : null
+                        const isOverdue = latestDate && latestDate < today
+                        return (
+                          <div className="text-right">
+                            <p className={`text-sm font-medium ${isOverdue ? 'text-red-500' : 'text-gray-900'}`}>
+                              {latestDate ? formatDate(latestDate.toISOString()) : '-'}
+                            </p>
+                            <p className="text-xs text-gray-500">최종 마감일</p>
+                          </div>
+                        )
+                      })()}
+                      <div className="w-px h-8 bg-gray-200" />
+                      {/* 진행중 과제 */}
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900">{activeTasks.length}</p>
+                        <p className="text-xs text-gray-500">진행중 과제</p>
+                        {overdueTasks.length > 0 && (
+                          <p className="text-xs text-red-500 font-medium">{overdueTasks.length}개 지연</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {activeTasks.length > 0 && (
