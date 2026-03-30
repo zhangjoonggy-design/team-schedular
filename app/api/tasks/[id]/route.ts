@@ -30,6 +30,33 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
+  // 단계 하위 과제가 업데이트되면 상위 과제 진척율을 비율 가중 합산으로 재계산
+  if (task.parentTaskId) {
+    const PHASE_RATIOS: Record<string, number> = {
+      '분석': 0.15, '설계': 0.20, '구현': 0.30,
+      '테스트': 0.25, '이행': 0.03, '안정화': 0.07,
+    }
+    const siblings = await prisma.task.findMany({
+      where: { parentTaskId: task.parentTaskId },
+      select: { title: true, progressPercent: true },
+    })
+    let totalRatio = 0
+    let weighted = 0
+    for (const s of siblings) {
+      const r = PHASE_RATIOS[s.title]
+      if (r !== undefined) {
+        totalRatio += r
+        weighted += s.progressPercent * r
+      }
+    }
+    if (totalRatio > 0) {
+      await prisma.task.update({
+        where: { id: task.parentTaskId },
+        data: { progressPercent: Math.round(weighted / totalRatio) },
+      })
+    }
+  }
+
   return NextResponse.json(task)
 }
 
