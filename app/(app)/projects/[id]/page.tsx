@@ -72,6 +72,10 @@ function TaskRow({
   const [editingProgress, setEditingProgress] = useState(false)
   const [progress, setProgress] = useState(task.progressPercent)
 
+  useEffect(() => {
+    setProgress(task.progressPercent)
+  }, [task.progressPercent])
+
   const handleProgressSave = () => {
     onUpdate(task.id, { progressPercent: progress })
     setEditingProgress(false)
@@ -638,7 +642,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [activeTab, setActiveTab] = useState<'tasks' | 'gantt' | 'issues'>('tasks')
 
   const fetchProject = async () => {
-    const res = await fetch(`/api/projects/${id}`)
+    const res = await fetch(`/api/projects/${id}`, { cache: 'no-store' })
     if (!res.ok) {
       const errText = await res.text()
       console.error('프로젝트 로딩 실패:', res.status, errText)
@@ -662,7 +666,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
-    fetchProject()
+    await fetchProject()
   }
 
   const handleDeleteTask = async (taskId: string) => {
