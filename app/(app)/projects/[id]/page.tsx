@@ -135,17 +135,17 @@ function TaskRow({
         </td>
         <td className="py-2.5 px-3">
           {editingProgress ? (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 w-full min-w-[80px]">
               <input
                 type="range"
                 min={0}
                 max={100}
                 value={progress}
                 onChange={(e) => setProgress(Number(e.target.value))}
-                className="w-20"
+                className="flex-1 min-w-0"
               />
-              <span className="text-xs w-8">{progress}%</span>
-              <button onClick={handleProgressSave} className="text-xs text-indigo-600">저장</button>
+              <span className="text-xs w-8 flex-shrink-0">{progress}%</span>
+              <button onClick={handleProgressSave} className="text-xs text-indigo-600 flex-shrink-0">저장</button>
             </div>
           ) : (
             <button onClick={() => setEditingProgress(true)} className="w-full text-left">
