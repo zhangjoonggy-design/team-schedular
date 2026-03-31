@@ -15,6 +15,8 @@ interface Vacation {
   type: string
   status: string
   note: string | null
+  startTime: string | null
+  endTime: string | null
   user: { id: string; name: string; avatarColor: string }
 }
 
@@ -205,7 +207,8 @@ export default function VacationsPage() {
   const [users, setUsers] = useState<UserInfo[]>([])
   const [showForm, setShowForm] = useState(false)
   const [tab, setTab] = useState<'all' | 'mine' | 'summary'>('all')
-  const [form, setForm] = useState({ startDate: '', endDate: '', type: 'ANNUAL', note: '', targetUserId: '' })
+  const [form, setForm] = useState({ startDate: '', endDate: '', type: 'ANNUAL', note: '', targetUserId: '', startTime: '09:00', endTime: '18:00' })
+  const [formError, setFormError] = useState('')
 
   const fetchVacations = async () => {
     const res = await fetch('/api/vacations')
@@ -225,13 +228,17 @@ export default function VacationsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await fetch('/api/vacations', {
+    setFormError('')
+    const res = await fetch('/api/vacations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, userId: form.targetUserId || undefined }),
     })
+    const data = await res.json()
+    if (!res.ok) { setFormError(data.error ?? '오류가 발생했습니다.'); return }
     setShowForm(false)
-    setForm({ startDate: '', endDate: '', type: 'ANNUAL', note: '', targetUserId: '' })
+    setFormError('')
+    setForm({ startDate: '', endDate: '', type: 'ANNUAL', note: '', targetUserId: '', startTime: '09:00', endTime: '18:00' })
     fetchVacations()
   }
 
@@ -308,6 +315,9 @@ export default function VacationsPage() {
                           {formatDate(v.startDate)} ~ {formatDate(v.endDate)}
                           <span className="ml-1 text-gray-400">({calcDays(v)}일)</span>
                         </p>
+                        {v.type === 'HALF_DAY' && v.startTime && v.endTime && (
+                          <p className="text-xs text-amber-600 mt-0.5">{v.startTime} ~ {v.endTime}</p>
+                        )}
                         {v.note && <p className="text-xs text-gray-400 mt-0.5">{v.note}</p>}
                       </div>
                       {(v.user.id === userId || isAdmin) && (
@@ -357,22 +367,72 @@ export default function VacationsPage() {
                   <div>
                     <label className="text-xs text-gray-500">시작일</label>
                     <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                      value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
+                      value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value, endDate: form.type === 'HALF_DAY' ? e.target.value : form.endDate })} required />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500">종료일</label>
                     <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                      value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} required />
+                      value={form.type === 'HALF_DAY' ? form.startDate : form.endDate}
+                      onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                      disabled={form.type === 'HALF_DAY'}
+                      required />
                   </div>
                 </div>
+                {/* 반차 시간 선택 */}
+                {form.type === 'HALF_DAY' && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+                    <p className="text-xs font-medium text-amber-700">반차 시간 선택</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500">시작 시간</label>
+                        <select className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
+                          value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })}>
+                          {Array.from({ length: 25 }, (_, i) => {
+                            const h = Math.floor(i / 2) + 8
+                            const m = i % 2 === 0 ? '00' : '30'
+                            if (h > 19) return null
+                            const val = `${String(h).padStart(2, '0')}:${m}`
+                            return <option key={val} value={val}>{val}</option>
+                          })}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">종료 시간</label>
+                        <select className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
+                          value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })}>
+                          {Array.from({ length: 25 }, (_, i) => {
+                            const h = Math.floor(i / 2) + 8
+                            const m = i % 2 === 0 ? '00' : '30'
+                            if (h > 20) return null
+                            const val = `${String(h).padStart(2, '0')}:${m}`
+                            return <option key={val} value={val}>{val}</option>
+                          })}
+                        </select>
+                      </div>
+                    </div>
+                    <p className="text-xs text-amber-600">
+                      {form.startTime} ~ {form.endTime} ({(() => {
+                        const [sh, sm] = form.startTime.split(':').map(Number)
+                        const [eh, em] = form.endTime.split(':').map(Number)
+                        const diff = (eh * 60 + em - sh * 60 - sm) / 60
+                        return diff > 0 ? `${diff}시간` : '-'
+                      })()})
+                    </p>
+                  </div>
+                )}
                 <div>
                   <label className="text-xs text-gray-500">사유 (선택)</label>
                   <input className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
                     placeholder="예: 개인 휴가"
                     value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
                 </div>
+                {formError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                    <p className="text-xs text-red-600">{formError}</p>
+                  </div>
+                )}
                 <div className="flex gap-2 pt-2">
-                  <button type="button" onClick={() => setShowForm(false)}
+                  <button type="button" onClick={() => { setShowForm(false); setFormError('') }}
                     className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm">취소</button>
                   <button type="submit"
                     className="flex-1 bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-700">등록</button>

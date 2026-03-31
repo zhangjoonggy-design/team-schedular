@@ -112,6 +112,8 @@ model VacationRequest {
   type      String   @default("ANNUAL")
   status    String   @default("PENDING")
   note      String?
+  startTime String?
+  endTime   String?
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
