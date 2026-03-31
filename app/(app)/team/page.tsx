@@ -271,7 +271,16 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
+  const [expandedTaskUsers, setExpandedTaskUsers] = useState<Set<string>>(new Set())
   const [form, setForm] = useState<FormState>(DEFAULT_FORM)
+
+  const toggleExpandedTasks = (userId: string) => {
+    setExpandedTaskUsers((prev) => {
+      const next = new Set(prev)
+      next.has(userId) ? next.delete(userId) : next.add(userId)
+      return next
+    })
+  }
 
   const fetchUsers = async () => {
     const res = await fetch('/api/users')
@@ -443,31 +452,42 @@ export default function TeamPage() {
                       </div>
                     </div>
                   </div>
-                  {activeTasks.length > 0 && (
-                    <div className="space-y-1.5">
-                      <p className="text-xs text-gray-500 font-medium mb-2">담당 과제</p>
-                      {activeTasks.slice(0, 4).map((a) => {
-                        const isOverdue = a.task.dueDate && new Date(a.task.dueDate) < today
-                        return (
-                          <div key={a.task.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.task.project.color }} />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-gray-700 truncate">{a.task.title}</p>
-                              <p className="text-xs text-gray-400">{a.task.project.name}</p>
-                            </div>
-                            {a.task.dueDate && (
-                              <p className={`text-xs flex-shrink-0 ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
-                                {isOverdue ? '지연' : formatDate(a.task.dueDate)}
-                              </p>
-                            )}
-                          </div>
-                        )
-                      })}
-                      {activeTasks.length > 4 && (
-                        <p className="text-xs text-gray-400 text-center">+{activeTasks.length - 4}개 더 있음</p>
-                      )}
-                    </div>
-                  )}
+                  {activeTasks.length > 0 && (() => {
+                    const isExpanded = expandedTaskUsers.has(user.id)
+                    const visibleTasks = isExpanded ? activeTasks : activeTasks.slice(0, 4)
+                    return (
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-gray-500 font-medium mb-2">담당 과제</p>
+                        <div className={isExpanded ? 'max-h-56 overflow-y-auto space-y-1.5 pr-1' : 'space-y-1.5'}>
+                          {visibleTasks.map((a) => {
+                            const isOverdue = a.task.dueDate && new Date(a.task.dueDate) < today
+                            return (
+                              <div key={a.task.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.task.project.color }} />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-gray-700 truncate">{a.task.title}</p>
+                                  <p className="text-xs text-gray-400">{a.task.project.name}</p>
+                                </div>
+                                {a.task.dueDate && (
+                                  <p className={`text-xs flex-shrink-0 ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                                    {isOverdue ? '지연' : formatDate(a.task.dueDate)}
+                                  </p>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                        {activeTasks.length > 4 && (
+                          <button
+                            onClick={() => toggleExpandedTasks(user.id)}
+                            className="w-full text-xs text-indigo-500 hover:text-indigo-700 text-center py-1 hover:bg-indigo-50 rounded-lg transition-colors"
+                          >
+                            {isExpanded ? '접기 ▲' : `+${activeTasks.length - 4}개 더 있음 ▼`}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })}
