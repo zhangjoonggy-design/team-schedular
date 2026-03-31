@@ -41,8 +41,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
-  // 하위 과제 진척율 변동 시 상위 과제 진척율 재계산
-  // 규칙: 전체 하위 과제 진척율의 평균 (1/N * 각 진척율 합산)
+  // 하위 과제 진척율 변동 시 상위 과제 진척율·상태 재계산
   if (task.parentTaskId) {
     const siblings = await prisma.task.findMany({
       where: { parentTaskId: task.parentTaskId },
@@ -51,10 +50,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const parentProgress = siblings.length > 0
       ? Math.round(siblings.reduce((sum, s) => sum + s.progressPercent, 0) / siblings.length)
       : 0
+    const parentStatus = parentProgress === 100 ? 'DONE' : parentProgress >= 1 ? 'IN_PROGRESS' : 'TODO'
 
     await prisma.task.update({
       where: { id: task.parentTaskId },
-      data: { progressPercent: parentProgress },
+      data: { progressPercent: parentProgress, status: parentStatus },
     })
   }
 
