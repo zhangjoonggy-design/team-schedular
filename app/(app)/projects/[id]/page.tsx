@@ -781,6 +781,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   if (!project) return <div className="p-6 text-gray-400">로딩중...</div>
 
+  const allTasks = [...project.tasks, ...project.tasks.flatMap((t) => t.subTasks)]
   // 프로젝트 진척율 = 상위 과제 진척율의 평균 (1/과제 수 * 100 기준)
   const overallProgress = project.tasks.length > 0
     ? Math.round(project.tasks.reduce((s, t) => s + t.progressPercent, 0) / project.tasks.length)
