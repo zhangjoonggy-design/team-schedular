@@ -1,4 +1,4 @@
-// 한국 공휴일 (2025~2027)
+// tasks route의 상세일정 계산에 사용하는 하드코딩 공휴일 (서버용)
 export const KR_HOLIDAYS = new Set([
   // 2025
   '2025-01-01','2025-01-28','2025-01-29','2025-01-30',
@@ -16,16 +16,11 @@ export const KR_HOLIDAYS = new Set([
   '2027-10-03','2027-10-04','2027-10-09','2027-12-25',
 ])
 
-/** 'YYYY-MM-DD' 문자열이 주말 또는 공휴일인지 반환 */
-export function isHolidayOrWeekend(dateStr: string): boolean {
-  const d = new Date(dateStr)
-  const dow = d.getUTCDay()
-  return dow === 0 || dow === 6 || KR_HOLIDAYS.has(dateStr)
+/** 주말 여부만 체크 (클라이언트·서버 공용, 동기) */
+export function isWeekend(dateStr: string): boolean {
+  return [0, 6].includes(new Date(dateStr).getUTCDay())
 }
 
-export function holidayErrorMsg(dateStr: string, label: '시작일' | '종료일'): string {
-  const d = new Date(dateStr)
-  const dow = d.getUTCDay()
-  const kind = (dow === 0 || dow === 6) ? '주말' : '공휴일'
-  return `${label}(${dateStr})은 ${kind}입니다. 평일을 선택해 주세요.`
+export function weekendErrorMsg(dateStr: string, label: '시작일' | '종료일'): string {
+  return `${label}(${dateStr})은 주말입니다. 평일을 선택해 주세요.`
 }

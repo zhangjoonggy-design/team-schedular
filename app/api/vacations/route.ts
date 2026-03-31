@@ -3,7 +3,55 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logActivity } from '@/lib/activity'
 import { VACATION_TYPE_LABELS } from '@/lib/utils'
-import { isHolidayOrWeekend, holidayErrorMsg } from '@/lib/holidays'
+import { isWeekend } from '@/lib/holidays'
+
+// ── 공공데이터 공휴일 API (한국천문연구원 특일정보) ─────────────────────────
+// 서버 인스턴스 메모리 캐시 (연도별, 24h TTL)
+const _cache = new Map<number, { dates: Set<string>; at: number }>()
+
+async function fetchPublicHolidays(year: number): Promise<Set<string>> {
+  const cached = _cache.get(year)
+  if (cached && Date.now() - cached.at < 86_400_000) return cached.dates
+
+  const key = process.env.PUBLIC_DATA_API_KEY
+  const dates = new Set<string>()
+  if (!key) return dates   // API 키 미설정 시 공휴일 체크 생략
+
+  // 12개월 병렬 요청
+  await Promise.all(
+    Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(async (mm) => {
+      try {
+        const url =
+          `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo` +
+          `?serviceKey=${key}&solYear=${year}&solMonth=${mm}&numOfRows=50&_type=json`
+        const res = await fetch(url, { cache: 'no-store' })
+        const json = await res.json()
+        const raw = json?.response?.body?.items?.item
+        if (!raw) return
+        for (const item of Array.isArray(raw) ? raw : [raw]) {
+          if (item.isHoliday === 'Y') {
+            const s = String(item.locdate)
+            dates.add(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`)
+          }
+        }
+      } catch (e) {
+        console.error(`[holiday] fetch error ${year}-${mm}`, e)
+      }
+    })
+  )
+
+  _cache.set(year, { dates, at: Date.now() })
+  return dates
+}
+
+/** 날짜 문자열이 주말 또는 공휴일이면 종류를 반환, 아니면 null */
+async function checkHoliday(dateStr: string): Promise<'주말' | '공휴일' | null> {
+  if (isWeekend(dateStr)) return '주말'
+  const year = parseInt(dateStr.slice(0, 4))
+  const holidays = await fetchPublicHolidays(year)
+  return holidays.has(dateStr) ? '공휴일' : null
+}
+// ──────────────────────────────────────────────────────────────────────────────
 
 export async function GET() {
   const session = await auth()
@@ -41,12 +89,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 시작일·종료일 휴일 검증
-  if (isHolidayOrWeekend(body.startDate)) {
-    return NextResponse.json({ error: holidayErrorMsg(body.startDate, '시작일') }, { status: 400 })
+  // 시작일·종료일 휴일 검증 (공공데이터 API)
+  const startKind = await checkHoliday(body.startDate)
+  if (startKind) {
+    return NextResponse.json({ error: `시작일(${body.startDate})은 ${startKind}입니다. 평일을 선택해 주세요.` }, { status: 400 })
   }
-  if (body.endDate && body.endDate !== body.startDate && isHolidayOrWeekend(body.endDate)) {
-    return NextResponse.json({ error: holidayErrorMsg(body.endDate, '종료일') }, { status: 400 })
+  if (body.endDate && body.endDate !== body.startDate) {
+    const endKind = await checkHoliday(body.endDate)
+    if (endKind) {
+      return NextResponse.json({ error: `종료일(${body.endDate})은 ${endKind}입니다. 평일을 선택해 주세요.` }, { status: 400 })
+    }
   }
 
   // 반차인데 09:00~18:00(연차 시간) 선택 시 오류
