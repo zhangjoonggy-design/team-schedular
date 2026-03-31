@@ -14,12 +14,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const data: Record<string, unknown> = {}
   if ('title' in body)           data.title = body.title
   if ('description' in body)     data.description = body.description
-  if ('status' in body)          data.status = body.status
   if ('priority' in body)        data.priority = body.priority
   if ('startDate' in body)       data.startDate = body.startDate ? new Date(body.startDate) : null
   if ('dueDate' in body)         data.dueDate = body.dueDate ? new Date(body.dueDate) : null
-  if ('progressPercent' in body) data.progressPercent = body.progressPercent
   if ('estimatedHours' in body)  data.estimatedHours = body.estimatedHours
+  if ('progressPercent' in body) {
+    const pct = body.progressPercent as number
+    data.progressPercent = pct
+    // 진척율에 따라 상태 자동 업데이트 (status가 명시되지 않은 경우)
+    if (!('status' in body)) {
+      if (pct === 100)       data.status = 'DONE'
+      else if (pct >= 1)     data.status = 'IN_PROGRESS'
+      else                   data.status = 'TODO'
+    }
+  }
+  if ('status' in body) data.status = body.status
 
   const task = await prisma.task.update({ where: { id }, data })
 
