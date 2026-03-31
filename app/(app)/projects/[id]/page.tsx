@@ -76,8 +76,11 @@ function TaskRow({
     setProgress(task.progressPercent)
   }, [task.progressPercent])
 
+  const progressToStatus = (pct: number) =>
+    pct === 100 ? 'DONE' : pct >= 1 ? 'IN_PROGRESS' : 'TODO'
+
   const handleProgressSave = () => {
-    onUpdate(task.id, { progressPercent: progress })
+    onUpdate(task.id, { progressPercent: progress, status: progressToStatus(progress) })
     setEditingProgress(false)
   }
 
