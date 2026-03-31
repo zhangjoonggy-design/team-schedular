@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       const phaseEnd = new Date(cursor)
       phaseEnd.setDate(phaseEnd.getDate() + days - 1)
 
-      await prisma.task.create({
+      const subTask = await prisma.task.create({
         data: {
           projectId: body.projectId,
           parentTaskId: task.id,
@@ -65,6 +65,12 @@ export async function POST(req: NextRequest) {
           progressPercent: 0,
         },
       })
+
+      if (body.assigneeIds?.length) {
+        await prisma.taskAssignee.createMany({
+          data: body.assigneeIds.map((userId: string) => ({ taskId: subTask.id, userId })),
+        })
+      }
 
       cursor.setDate(cursor.getDate() + days)
     }
