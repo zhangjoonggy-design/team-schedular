@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logActivity } from '@/lib/activity'
 
 const PHASES = [
   { name: '분석',   ratio: 0.15 },
@@ -68,6 +69,9 @@ export async function POST(req: NextRequest) {
       cursor.setDate(cursor.getDate() + days)
     }
   }
+
+  const project = await prisma.project.findUnique({ where: { id: body.projectId }, select: { name: true } })
+  await logActivity({ action: 'CREATE', entity: 'TASK', entityId: task.id, entityName: task.title, userId: session.user!.id, userName: session.user!.name, detail: { project: project?.name } })
 
   return NextResponse.json(task, { status: 201 })
 }

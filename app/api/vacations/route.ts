@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logActivity } from '@/lib/activity'
 
 export async function GET() {
   const session = await auth()
@@ -35,6 +36,8 @@ export async function POST(req: NextRequest) {
       user: { select: { id: true, name: true, avatarColor: true } },
     },
   })
+
+  await logActivity({ action: 'CREATE', entity: 'VACATION', entityId: vacation.id, entityName: `${vacation.user.name} 휴가`, userId: session.user!.id, userName: session.user!.name, detail: { start: body.startDate, end: body.endDate, type: body.type } })
 
   return NextResponse.json(vacation, { status: 201 })
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FolderKanban, AlertTriangle, CalendarDays, Palmtree, Users } from 'lucide-react'
+import { LayoutDashboard, FolderKanban, AlertTriangle, CalendarDays, Palmtree, Users, History } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/calendar', label: '캘린더', icon: CalendarDays },
   { href: '/vacations', label: '휴가', icon: Palmtree },
   { href: '/team', label: '팀원', icon: Users },
+  { href: '/history', label: '변경내역', icon: History },
 ]
 
 export function Sidebar() {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logActivity } from '@/lib/activity'
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -51,6 +52,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     })
   }
 
+  await logActivity({ action: 'UPDATE', entity: 'TASK', entityId: task.id, entityName: task.title, userId: session.user!.id, userName: session.user!.name })
+
   return NextResponse.json(task)
 }
 
@@ -60,9 +63,11 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   const { id } = await params
 
+  const task = await prisma.task.findUnique({ where: { id }, select: { title: true } })
   // 하위 과제(단계별 상세일정) 먼저 삭제 — TaskAssignee 등 연관 레코드는 cascade로 자동 삭제
   await prisma.task.deleteMany({ where: { parentTaskId: id } })
   await prisma.task.delete({ where: { id } })
+  await logActivity({ action: 'DELETE', entity: 'TASK', entityId: id, entityName: task?.title ?? id, userId: session.user!.id, userName: session.user!.name })
 
   return NextResponse.json({ success: true })
 }

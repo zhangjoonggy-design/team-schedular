@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { logActivity } from '@/lib/activity'
 
 export async function GET() {
   const session = await auth()
@@ -66,6 +67,8 @@ export async function POST(req: NextRequest) {
         skipDuplicates: true,
       })
     }
+
+    await logActivity({ action: 'CREATE', entity: 'USER', entityId: user.id, entityName: user.name, userId: session.user!.id, userName: session.user!.name })
 
     return NextResponse.json(user, { status: 201 })
   } catch (e: any) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logActivity } from '@/lib/activity'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -72,6 +73,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     },
   })
 
+  await logActivity({ action: 'UPDATE', entity: 'PROJECT', entityId: project.id, entityName: project.name, userId: session.user!.id, userName: session.user!.name })
+
   return NextResponse.json(project)
 }
 
@@ -80,7 +83,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
+  const project = await prisma.project.findUnique({ where: { id }, select: { name: true } })
   await prisma.project.delete({ where: { id } })
+  await logActivity({ action: 'DELETE', entity: 'PROJECT', entityId: id, entityName: project?.name ?? id, userId: session.user!.id, userName: session.user!.name })
 
   return NextResponse.json({ success: true })
 }

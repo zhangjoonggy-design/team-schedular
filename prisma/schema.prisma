@@ -129,3 +129,15 @@ model Comment {
   task   Task?  @relation(fields: [taskId], references: [id])
   issue  Issue? @relation(fields: [issueId], references: [id])
 }
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  action     String   // CREATE | UPDATE | DELETE
+  entity     String   // PROJECT | TASK | ISSUE | VACATION | USER
+  entityId   String
+  entityName String
+  userId     String?
+  userName   String?
+  detail     String?
+  createdAt  DateTime @default(now())
+}
