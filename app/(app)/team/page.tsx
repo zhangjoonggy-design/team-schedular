@@ -485,49 +485,44 @@ export default function TeamPage() {
 
                     return (
                       <div className="space-y-2 mt-3">
-                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">담당 과제</p>
-                        <div className={isExpanded ? 'max-h-64 overflow-y-auto pr-0.5 space-y-2' : 'max-h-36 overflow-hidden space-y-2'}>
+                        <p className="text-xs text-gray-400 font-medium">담당 과제</p>
+                        <div className={isExpanded ? 'max-h-64 overflow-y-auto pr-0.5 space-y-1.5' : 'max-h-36 overflow-hidden space-y-1.5'}>
                           {projectEntries.map(([projName, proj]) => {
                             const parentEntries = Array.from(proj.parentMap.entries())
                             return (
-                              <div key={projName} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                                {/* 프로젝트 헤더 */}
-                                <div className="flex items-center gap-2 px-3 py-2" style={{ backgroundColor: proj.color + '22' }}>
-                                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: proj.color }} />
+                              <div key={projName} className="rounded-lg overflow-hidden">
+                                {/* 1단계: 프로젝트 — 색상 배경 + 굵은 텍스트 */}
+                                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-t-lg" style={{ backgroundColor: proj.color + '18' }}>
+                                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: proj.color }} />
                                   <span className="text-xs font-bold truncate" style={{ color: proj.color }}>{projName}</span>
                                 </div>
-                                {/* 과제 목록 */}
-                                <div className="bg-white divide-y divide-gray-50">
+                                {/* 2단계: 과제 — 흰 배경, 들여쓰기, 진한 회색 */}
+                                <div className="bg-white rounded-b-lg">
                                   {parentEntries.map(([parentTitle, group]) => (
-                                    <div key={parentTitle} className="px-3 py-2">
-                                      {/* 상위 과제 */}
-                                      <div className="flex items-center gap-1.5 mb-1.5">
-                                        <div className="w-1.5 h-1.5 rounded-sm flex-shrink-0 bg-gray-400" />
+                                    <div key={parentTitle}>
+                                      <div className="flex items-center gap-2 px-3 py-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-gray-500" />
                                         <span className="text-xs font-semibold text-gray-700">{parentTitle}</span>
                                       </div>
-                                      {/* 상세 과제 */}
-                                      {group.subtasks.length > 0 && (
-                                        <div className="ml-3 border-l-2 border-dashed border-gray-200 pl-3 space-y-1">
-                                          {group.subtasks.map((sub) => {
-                                            const isOverdue = sub.dueDate && new Date(sub.dueDate) < today
-                                            return (
-                                              <div key={sub.id} className="flex items-center justify-between gap-2">
-                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                  <div className="w-1 h-1 rounded-full flex-shrink-0 bg-gray-300" />
-                                                  <span className="text-xs text-gray-500 truncate">{sub.title}</span>
-                                                </div>
-                                                {sub.dueDate && (
-                                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium flex-shrink-0 ${
-                                                    isOverdue ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'
-                                                  }`}>
-                                                    {isOverdue ? '지연' : formatDate(sub.dueDate)}
-                                                  </span>
-                                                )}
-                                              </div>
-                                            )
-                                          })}
-                                        </div>
-                                      )}
+                                      {/* 3단계: 상세과제 — 더 들여쓰기, 연한 회색 텍스트 */}
+                                      {group.subtasks.map((sub) => {
+                                        const isOverdue = sub.dueDate && new Date(sub.dueDate) < today
+                                        return (
+                                          <div key={sub.id} className="flex items-center justify-between gap-2 pl-7 pr-3 py-1 bg-gray-50">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                              <div className="w-1 h-1 rounded-full flex-shrink-0 bg-gray-300" />
+                                              <span className="text-[11px] text-gray-400 truncate">{sub.title}</span>
+                                            </div>
+                                            {sub.dueDate && (
+                                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
+                                                isOverdue ? 'bg-red-100 text-red-500' : 'bg-gray-100 text-gray-400'
+                                              }`}>
+                                                {isOverdue ? '지연' : formatDate(sub.dueDate)}
+                                              </span>
+                                            )}
+                                          </div>
+                                        )
+                                      })}
                                     </div>
                                   ))}
                                 </div>
@@ -538,7 +533,7 @@ export default function TeamPage() {
                         {activeTasks.length > 3 && (
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleExpandedTasks(user.id) }}
-                            className="w-full text-xs text-indigo-400 hover:text-indigo-600 text-center py-1.5 hover:bg-indigo-50 rounded-lg transition-colors border border-dashed border-indigo-200 hover:border-indigo-300"
+                            className="w-full text-xs text-gray-400 hover:text-indigo-500 text-center py-1.5 hover:bg-indigo-50 rounded-lg transition-colors"
                           >
                             {isExpanded ? '접기 ▲' : '더 보기 ▼'}
                           </button>
