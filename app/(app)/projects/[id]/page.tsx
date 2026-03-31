@@ -324,12 +324,6 @@ function AddTaskModal({
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-500">예상 작업시간 (h)</label>
-            <input type="number" min={0} className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-              placeholder="예: 8"
-              value={form.estimatedHours} onChange={(e) => setForm({ ...form, estimatedHours: e.target.value })} />
-          </div>
-          <div>
             <label className="text-xs text-gray-500 mb-2 block">담당자</label>
             {allUsers.length === 0 ? (
               <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
@@ -523,12 +517,6 @@ function EditTaskModal({
                 max={projEnd ?? undefined}
                 onChange={(e) => { setDateAlert(null); setForm({ ...form, dueDate: e.target.value }) }} />
             </div>
-          </div>
-          <div>
-            <label className="text-xs text-gray-500">예상 작업시간 (h)</label>
-            <input type="number" min={0} className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-              placeholder="예: 8"
-              value={form.estimatedHours} onChange={(e) => setForm({ ...form, estimatedHours: e.target.value })} />
           </div>
           <div>
             <label className="text-xs text-gray-500 mb-2 block">담당자</label>
