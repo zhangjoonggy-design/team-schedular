@@ -50,6 +50,8 @@ const FORM_TYPE_OPTIONS = [
   { value: 'HALF_DAY',    label: '대체휴가' },
   { value: 'SICK',         label: '병가' },
   { value: 'REMOTE',       label: '재택근무' },
+  { value: 'PETITION',     label: '청원휴가' },
+  { value: 'PUBLIC_DUTY',  label: '공가' },
 ]
 
 function buildSummaries(users: UserInfo[], vacations: Vacation[]): UserSummary[] {

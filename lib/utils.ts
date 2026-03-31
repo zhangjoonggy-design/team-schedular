@@ -76,6 +76,8 @@ export const VACATION_TYPE_LABELS: Record<string, string> = {
   HALF_DAY: '대체휴가',
   SICK: '병가',
   REMOTE: '재택근무',
+  PETITION: '청원휴가',
+  PUBLIC_DUTY: '공가',
 }
 
 export function formatDate(date: string | Date | null | undefined): string {
