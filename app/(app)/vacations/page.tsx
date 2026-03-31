@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/Header'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { formatDate, VACATION_TYPE_LABELS } from '@/lib/utils'
+import { isHolidayOrWeekend, holidayErrorMsg } from '@/lib/holidays'
 import { Plus, Users, CalendarDays } from 'lucide-react'
 
 interface Vacation {
@@ -240,6 +241,14 @@ export default function VacationsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
+
+    // 휴일 검증
+    if (form.startDate && isHolidayOrWeekend(form.startDate)) {
+      setFormError(holidayErrorMsg(form.startDate, '시작일')); return
+    }
+    if (form.endDate && !['HALF', 'HALF_DAY', 'QUARTER_DAY'].includes(form.type) && isHolidayOrWeekend(form.endDate)) {
+      setFormError(holidayErrorMsg(form.endDate, '종료일')); return
+    }
 
     // 대체휴가 09:00~18:00 → 연차 안내
     if (form.type === 'HALF_DAY' && form.startTime === '09:00' && form.endTime === '18:00') {

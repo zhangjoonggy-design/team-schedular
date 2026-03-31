@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logActivity } from '@/lib/activity'
 import { VACATION_TYPE_LABELS } from '@/lib/utils'
+import { isHolidayOrWeekend, holidayErrorMsg } from '@/lib/holidays'
 
 export async function GET() {
   const session = await auth()
@@ -28,6 +29,14 @@ export async function POST(req: NextRequest) {
   const sessionUser = await prisma.user.findUnique({ where: { id: session.user!.id! }, select: { role: true } })
   const isAdmin = sessionUser?.role === 'ADMIN'
   const targetUserId = (isAdmin && body.userId) ? body.userId : session.user!.id!
+
+  // 시작일·종료일 휴일 검증
+  if (isHolidayOrWeekend(body.startDate)) {
+    return NextResponse.json({ error: holidayErrorMsg(body.startDate, '시작일') }, { status: 400 })
+  }
+  if (body.endDate && body.endDate !== body.startDate && isHolidayOrWeekend(body.endDate)) {
+    return NextResponse.json({ error: holidayErrorMsg(body.endDate, '종료일') }, { status: 400 })
+  }
 
   // 반차인데 09:00~18:00(연차 시간) 선택 시 오류
   if (body.type === 'HALF_DAY' && body.startTime === '09:00' && body.endTime === '18:00') {
