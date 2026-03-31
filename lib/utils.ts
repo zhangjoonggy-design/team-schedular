@@ -71,7 +71,7 @@ export const SEVERITY_COLORS: Record<string, string> = {
 export const VACATION_TYPE_LABELS: Record<string, string> = {
   ANNUAL: '연차',
   SICK: '병가',
-  HALF_DAY: '반차',
+  HALF_DAY: '대체휴가',
   REMOTE: '재택근무',
 }
 

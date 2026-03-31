@@ -230,7 +230,7 @@ export default function VacationsPage() {
     e.preventDefault()
     setFormError('')
     if (form.type === 'HALF_DAY' && form.startTime === '09:00' && form.endTime === '18:00') {
-      setFormError('09:00 ~ 18:00은 반차가 아닌 연차로 등록해 주세요.')
+      setFormError('09:00 ~ 18:00은 대체휴가가 아닌 연차로 등록해 주세요.')
       return
     }
     const res = await fetch('/api/vacations', {
@@ -385,7 +385,7 @@ export default function VacationsPage() {
                 {/* 반차 시간 선택 */}
                 {form.type === 'HALF_DAY' && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
-                    <p className="text-xs font-medium text-amber-700">반차 시간 선택</p>
+                    <p className="text-xs font-medium text-amber-700">대체휴가 시간 선택</p>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-xs text-gray-500">시작 시간</label>

@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   // 반차인데 09:00~18:00(연차 시간) 선택 시 오류
   if (body.type === 'HALF_DAY' && body.startTime === '09:00' && body.endTime === '18:00') {
-    return NextResponse.json({ error: '09:00 ~ 18:00은 반차가 아닌 연차로 등록해 주세요.' }, { status: 400 })
+    return NextResponse.json({ error: '09:00 ~ 18:00은 대체휴가가 아닌 연차로 등록해 주세요.' }, { status: 400 })
   }
 
   // 중복 일정 검증
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     const fmt = (d: Date) => d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
     const isHalfConflict = isNewHalfDay && conflicting.type === 'HALF_DAY'
     const msg = isHalfConflict
-      ? `해당 날짜에 ${conflicting.startTime} ~ ${conflicting.endTime} 반차가 이미 등록되어 있습니다.`
+      ? `해당 날짜에 ${conflicting.startTime} ~ ${conflicting.endTime} 대체휴가가 이미 등록되어 있습니다.`
       : `${fmt(conflicting.startDate)} ~ ${fmt(conflicting.endDate)} 기간에 이미 등록된 휴가가 있습니다.`
     return NextResponse.json({ error: msg }, { status: 409 })
   }
