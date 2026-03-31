@@ -12,6 +12,60 @@ const PHASES = [
   { name: '안정화', ratio: 0.07 },
 ]
 
+// 한국 공휴일 (2025~2027)
+const KR_HOLIDAYS = new Set([
+  // 2025
+  '2025-01-01','2025-01-28','2025-01-29','2025-01-30',
+  '2025-03-01','2025-05-05','2025-05-06','2025-06-06',
+  '2025-08-15','2025-10-03','2025-10-06','2025-10-07','2025-10-08','2025-10-09','2025-12-25',
+  // 2026
+  '2026-01-01','2026-02-17','2026-02-18','2026-02-19',
+  '2026-03-01','2026-03-02','2026-05-05','2026-05-25',
+  '2026-06-06','2026-08-15','2026-09-24','2026-09-25','2026-09-26',
+  '2026-10-03','2026-10-09','2026-12-25',
+  // 2027
+  '2027-01-01','2027-02-06','2027-02-07','2027-02-08',
+  '2027-03-01','2027-05-05','2027-05-14',
+  '2027-06-06','2027-08-15','2027-08-16',
+  '2027-10-03','2027-10-04','2027-10-09','2027-12-25',
+])
+
+function isHolidayOrWeekend(d: Date): boolean {
+  const dow = d.getDay()
+  const ymd = d.toISOString().slice(0, 10)
+  return dow === 0 || dow === 6 || KR_HOLIDAYS.has(ymd)
+}
+
+// 기준일에서 가장 가까운 월요일(1) 또는 목요일(4)을 반환 (공휴일·주말 제외)
+function nearestMonOrThu(date: Date): Date {
+  const base = new Date(date)
+  base.setHours(0, 0, 0, 0)
+
+  // ±6일 범위에서 가장 가까운 월/목 탐색
+  let best: Date | null = null
+  let bestDist = Infinity
+  for (let offset = -6; offset <= 6; offset++) {
+    const c = new Date(base)
+    c.setDate(base.getDate() + offset)
+    const dow = c.getDay()
+    if ((dow === 1 || dow === 4) && Math.abs(offset) < bestDist) {
+      bestDist = Math.abs(offset)
+      best = c
+    }
+  }
+
+  // 공휴일이면 이후 가장 가까운 월/목으로 이동
+  let result = new Date(best!)
+  for (let i = 0; i < 14; i++) {
+    if (!isHolidayOrWeekend(result)) break
+    result.setDate(result.getDate() + 1)
+    while (result.getDay() !== 1 && result.getDay() !== 4) {
+      result.setDate(result.getDate() + 1)
+    }
+  }
+  return result
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -50,8 +104,11 @@ export async function POST(req: NextRequest) {
     let cursor = new Date(start)
     for (const phase of PHASES) {
       const days = Math.max(1, Math.round(totalDays * phase.ratio))
-      const phaseEnd = new Date(cursor)
-      phaseEnd.setDate(phaseEnd.getDate() + days - 1)
+      const rawEnd = new Date(cursor)
+      rawEnd.setDate(rawEnd.getDate() + days - 1)
+
+      // 마감일은 가장 가까운 월요일 또는 목요일 (공휴일 제외)
+      const phaseEnd = nearestMonOrThu(rawEnd)
 
       const subTask = await prisma.task.create({
         data: {
@@ -61,7 +118,7 @@ export async function POST(req: NextRequest) {
           status: 'TODO',
           priority: body.priority ?? 'MEDIUM',
           startDate: new Date(cursor),
-          dueDate: new Date(phaseEnd),
+          dueDate: phaseEnd,
           progressPercent: 0,
         },
       })
