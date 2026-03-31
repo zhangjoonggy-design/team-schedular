@@ -32,19 +32,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
-  // 단계 하위 과제가 업데이트되면 상위 과제 진척율을 재계산
-  // 규칙: 100% 완료된 단계 수 / 6 × 100 (6단계 모두 완료 시 정확히 100%)
+  // 하위 과제 진척율 변동 시 상위 과제 진척율 재계산
+  // 규칙: 전체 하위 과제 진척율의 평균 (1/N * 각 진척율 합산)
   if (task.parentTaskId) {
-    const PHASE_NAMES = ['분석', '설계', '구현', '테스트', '이행', '안정화']
     const siblings = await prisma.task.findMany({
       where: { parentTaskId: task.parentTaskId },
-      select: { title: true, progressPercent: true },
+      select: { progressPercent: true },
     })
-    const phaseMap = new Map(siblings.map((s) => [s.title, s.progressPercent]))
-    const completedCount = PHASE_NAMES.filter((n) => phaseMap.get(n) === 100).length
-    const parentProgress = completedCount >= PHASE_NAMES.length
-      ? 100
-      : Math.round((completedCount / PHASE_NAMES.length) * 100)
+    const parentProgress = siblings.length > 0
+      ? Math.round(siblings.reduce((sum, s) => sum + s.progressPercent, 0) / siblings.length)
+      : 0
 
     await prisma.task.update({
       where: { id: task.parentTaskId },
