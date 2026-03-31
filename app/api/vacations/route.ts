@@ -23,13 +23,18 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
 
+  // 관리자는 타 직원 대신 등록 가능
+  const sessionUser = await prisma.user.findUnique({ where: { id: session.user!.id! }, select: { role: true } })
+  const isAdmin = sessionUser?.role === 'ADMIN'
+  const targetUserId = (isAdmin && body.userId) ? body.userId : session.user!.id!
+
   const vacation = await prisma.vacationRequest.create({
     data: {
-      userId: session.user!.id!,
+      userId: targetUserId,
       startDate: new Date(body.startDate),
       endDate: new Date(body.endDate),
       type: body.type ?? 'ANNUAL',
-      status: 'PENDING',
+      status: 'APPROVED',
       note: body.note,
     },
     include: {

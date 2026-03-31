@@ -6,7 +6,7 @@ import { Header } from '@/components/layout/Header'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { formatDate, VACATION_TYPE_LABELS } from '@/lib/utils'
-import { Plus, Check, X, Users, CalendarDays } from 'lucide-react'
+import { Plus, Users, CalendarDays } from 'lucide-react'
 
 interface Vacation {
   id: string
@@ -205,7 +205,7 @@ export default function VacationsPage() {
   const [users, setUsers] = useState<UserInfo[]>([])
   const [showForm, setShowForm] = useState(false)
   const [tab, setTab] = useState<'all' | 'mine' | 'summary'>('all')
-  const [form, setForm] = useState({ startDate: '', endDate: '', type: 'ANNUAL', note: '' })
+  const [form, setForm] = useState({ startDate: '', endDate: '', type: 'ANNUAL', note: '', targetUserId: '' })
 
   const fetchVacations = async () => {
     const res = await fetch('/api/vacations')
@@ -228,24 +228,15 @@ export default function VacationsPage() {
     await fetch('/api/vacations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, userId: form.targetUserId || undefined }),
     })
     setShowForm(false)
-    setForm({ startDate: '', endDate: '', type: 'ANNUAL', note: '' })
-    fetchVacations()
-  }
-
-  const handleApprove = async (id: string, status: 'APPROVED' | 'REJECTED') => {
-    await fetch(`/api/vacations/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
+    setForm({ startDate: '', endDate: '', type: 'ANNUAL', note: '', targetUserId: '' })
     fetchVacations()
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('휴가 신청을 취소하시겠습니까?')) return
+    if (!confirm('휴가를 삭제하시겠습니까?')) return
     await fetch(`/api/vacations/${id}`, { method: 'DELETE' })
     fetchVacations()
   }
@@ -257,7 +248,6 @@ export default function VacationsPage() {
     ? vacations.filter((v) => v.user.id === userId)
     : vacations
 
-  const pending = vacations.filter((v) => v.status === 'PENDING')
   const summaries = buildSummaries(users, vacations)
 
   const TABS = [
@@ -286,7 +276,7 @@ export default function VacationsPage() {
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
           >
-            <Plus className="w-4 h-4" /> 휴가 신청
+            <Plus className="w-4 h-4" /> 휴가 등록
           </button>
         </div>
 
@@ -296,42 +286,6 @@ export default function VacationsPage() {
         {/* 전체/내 신청 탭 */}
         {tab !== 'summary' && (
           <>
-            {/* 관리자용 승인 대기 */}
-            {isAdmin && pending.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <h3 className="font-semibold text-amber-800 mb-3">승인 대기 ({pending.length}건)</h3>
-                <div className="space-y-2">
-                  {pending.map((v) => (
-                    <div key={v.id} className="flex items-center gap-3 bg-white rounded-lg p-3">
-                      <UserAvatar name={v.user.name} avatarColor={v.user.avatarColor} size="sm" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-800">{v.user.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(v.startDate)} ~ {formatDate(v.endDate)} · {VACATION_TYPE_LABELS[v.type]}
-                        </p>
-                        {v.note && <p className="text-xs text-gray-400 mt-0.5">{v.note}</p>}
-                      </div>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleApprove(v.id, 'APPROVED')}
-                          className="p-1.5 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"
-                          title="승인"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleApprove(v.id, 'REJECTED')}
-                          className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
-                          title="반려"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* 휴가 목록 */}
             <div className="bg-white rounded-xl border border-gray-200">
@@ -356,12 +310,12 @@ export default function VacationsPage() {
                         </p>
                         {v.note && <p className="text-xs text-gray-400 mt-0.5">{v.note}</p>}
                       </div>
-                      {v.user.id === userId && v.status === 'PENDING' && (
+                      {(v.user.id === userId || isAdmin) && (
                         <button
                           onClick={() => handleDelete(v.id)}
                           className="text-xs text-red-500 hover:text-red-700"
                         >
-                          취소
+                          삭제
                         </button>
                       )}
                     </div>
@@ -372,12 +326,24 @@ export default function VacationsPage() {
           </>
         )}
 
-        {/* 휴가 신청 모달 */}
+        {/* 휴가 등록 모달 */}
         {showForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl w-full max-w-md p-6">
-              <h3 className="font-semibold text-gray-800 mb-4">휴가 신청</h3>
+              <h3 className="font-semibold text-gray-800 mb-4">휴가 등록</h3>
               <form onSubmit={handleSubmit} className="space-y-3">
+                {isAdmin && (
+                  <div>
+                    <label className="text-xs text-gray-500">대상 팀원</label>
+                    <select className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
+                      value={form.targetUserId} onChange={(e) => setForm({ ...form, targetUserId: e.target.value })}>
+                      <option value="">내 휴가</option>
+                      {users.filter((u) => u.id !== userId).map((u) => (
+                        <option key={u.id} value={u.id}>{u.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="text-xs text-gray-500">휴가 종류</label>
                   <select className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
@@ -409,7 +375,7 @@ export default function VacationsPage() {
                   <button type="button" onClick={() => setShowForm(false)}
                     className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm">취소</button>
                   <button type="submit"
-                    className="flex-1 bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-700">신청</button>
+                    className="flex-1 bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-700">등록</button>
                 </div>
               </form>
             </div>
