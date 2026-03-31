@@ -229,6 +229,10 @@ export default function VacationsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
+    if (form.type === 'HALF_DAY' && form.startTime === '09:00' && form.endTime === '18:00') {
+      setFormError('09:00 ~ 18:00은 반차가 아닌 연차로 등록해 주세요.')
+      return
+    }
     const res = await fetch('/api/vacations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
