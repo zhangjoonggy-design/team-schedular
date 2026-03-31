@@ -44,12 +44,12 @@ function calcDays(v: Vacation): number {
 
 // 폼 전용 타입 옵션 (HALF는 UI용 가상 타입 → 제출 시 HALF_AM/HALF_PM으로 변환)
 const FORM_TYPE_OPTIONS = [
-  { value: 'ANNUAL',      label: '연차' },
-  { value: 'SICK',        label: '병가' },
-  { value: 'REMOTE',      label: '재택근무' },
-  { value: 'HALF_DAY',   label: '대체휴가' },
-  { value: 'HALF',        label: '반차' },
-  { value: 'QUARTER_DAY', label: '반반차' },
+  { value: 'ANNUAL',       label: '연차' },
+  { value: 'HALF',         label: '반차' },
+  { value: 'QUARTER_DAY',  label: '반반차' },
+  { value: 'HALF_DAY',    label: '대체휴가' },
+  { value: 'SICK',         label: '병가' },
+  { value: 'REMOTE',       label: '재택근무' },
 ]
 
 function buildSummaries(users: UserInfo[], vacations: Vacation[]): UserSummary[] {
