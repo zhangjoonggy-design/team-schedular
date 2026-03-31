@@ -34,11 +34,22 @@ interface UserSummary extends UserInfo {
 }
 
 function calcDays(v: Vacation): number {
-  if (v.type === 'HALF_DAY') return 0.5
+  if (['HALF_DAY', 'HALF_AM', 'HALF_PM'].includes(v.type)) return 0.5
+  if (v.type === 'QUARTER_DAY') return 0.25
   const start = new Date(v.startDate)
   const end = new Date(v.endDate)
   return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
 }
+
+// 폼 전용 타입 옵션 (HALF는 UI용 가상 타입 → 제출 시 HALF_AM/HALF_PM으로 변환)
+const FORM_TYPE_OPTIONS = [
+  { value: 'ANNUAL',      label: '연차' },
+  { value: 'SICK',        label: '병가' },
+  { value: 'REMOTE',      label: '재택근무' },
+  { value: 'HALF_DAY',   label: '대체휴가' },
+  { value: 'HALF',        label: '반차' },
+  { value: 'QUARTER_DAY', label: '반반차' },
+]
 
 function buildSummaries(users: UserInfo[], vacations: Vacation[]): UserSummary[] {
   return users.map((user) => {
@@ -207,7 +218,7 @@ export default function VacationsPage() {
   const [users, setUsers] = useState<UserInfo[]>([])
   const [showForm, setShowForm] = useState(false)
   const [tab, setTab] = useState<'all' | 'mine' | 'summary'>('all')
-  const [form, setForm] = useState({ startDate: '', endDate: '', type: 'ANNUAL', note: '', targetUserId: '', startTime: '09:00', endTime: '18:00' })
+  const [form, setForm] = useState({ startDate: '', endDate: '', type: 'ANNUAL', note: '', targetUserId: '', startTime: '09:00', endTime: '18:00', halfSubType: 'AM' as 'AM' | 'PM' })
   const [formError, setFormError] = useState('')
 
   const fetchVacations = async () => {
@@ -229,20 +240,42 @@ export default function VacationsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
+
+    // 대체휴가 09:00~18:00 → 연차 안내
     if (form.type === 'HALF_DAY' && form.startTime === '09:00' && form.endTime === '18:00') {
       setFormError('09:00 ~ 18:00은 대체휴가가 아닌 연차로 등록해 주세요.')
       return
     }
+    // 반차 → HALF_AM / HALF_PM 변환
+    let submitType = form.type
+    let submitStartTime = form.startTime
+    let submitEndTime = form.endTime
+    if (form.type === 'HALF') {
+      submitType = form.halfSubType === 'AM' ? 'HALF_AM' : 'HALF_PM'
+      submitStartTime = form.halfSubType === 'AM' ? '09:00' : '14:00'
+      submitEndTime   = form.halfSubType === 'AM' ? '13:00' : '18:00'
+    }
+    // 반반차 종료일 = 시작일 동일 처리
+    const submitEndDate = ['HALF', 'QUARTER_DAY', 'HALF_DAY'].includes(form.type)
+      ? form.startDate : form.endDate
+
     const res = await fetch('/api/vacations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, userId: form.targetUserId || undefined }),
+      body: JSON.stringify({
+        ...form,
+        type: submitType,
+        startTime: submitStartTime,
+        endTime: submitEndTime,
+        endDate: submitEndDate,
+        userId: form.targetUserId || undefined,
+      }),
     })
     const data = await res.json()
     if (!res.ok) { setFormError(data.error ?? '오류가 발생했습니다.'); return }
     setShowForm(false)
     setFormError('')
-    setForm({ startDate: '', endDate: '', type: 'ANNUAL', note: '', targetUserId: '', startTime: '09:00', endTime: '18:00' })
+    setForm({ startDate: '', endDate: '', type: 'ANNUAL', note: '', targetUserId: '', startTime: '09:00', endTime: '18:00', halfSubType: 'AM' })
     fetchVacations()
   }
 
@@ -319,7 +352,9 @@ export default function VacationsPage() {
                           {formatDate(v.startDate)} ~ {formatDate(v.endDate)}
                           <span className="ml-1 text-gray-400">({calcDays(v)}일)</span>
                         </p>
-                        {v.type === 'HALF_DAY' && v.startTime && v.endTime && (
+                        {v.type === 'HALF_AM' && <p className="text-xs text-indigo-500 mt-0.5">09:00 ~ 13:00</p>}
+                        {v.type === 'HALF_PM' && <p className="text-xs text-indigo-500 mt-0.5">14:00 ~ 18:00</p>}
+                        {['HALF_DAY', 'QUARTER_DAY'].includes(v.type) && v.startTime && v.endTime && (
                           <p className="text-xs text-amber-600 mt-0.5">{v.startTime} ~ {v.endTime}</p>
                         )}
                         {v.note && <p className="text-xs text-gray-400 mt-0.5">{v.note}</p>}
@@ -361,28 +396,61 @@ export default function VacationsPage() {
                 <div>
                   <label className="text-xs text-gray-500">휴가 종류</label>
                   <select className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                    value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                    {Object.entries(VACATION_TYPE_LABELS).map(([k, v]) => (
-                      <option key={k} value={k}>{v}</option>
+                    value={form.type}
+                    onChange={(e) => {
+                      const t = e.target.value
+                      const defaultST = '09:00'
+                      const defaultET = t === 'QUARTER_DAY' ? '11:00' : '18:00'
+                      setForm({ ...form, type: t, startTime: defaultST, endTime: defaultET, halfSubType: 'AM' })
+                    }}>
+                    {FORM_TYPE_OPTIONS.map(({ value, label }) => (
+                      <option key={value} value={value}>{label}</option>
                     ))}
                   </select>
                 </div>
+
+                {/* 반차 — 오전/오후 선택 */}
+                {form.type === 'HALF' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['AM', 'PM'] as const).map((sub) => {
+                      const isAM = sub === 'AM'
+                      const selected = form.halfSubType === sub
+                      return (
+                        <button key={sub} type="button"
+                          onClick={() => setForm({ ...form, halfSubType: sub })}
+                          className={`rounded-xl border-2 py-3 px-2 text-center transition-all ${
+                            selected ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'
+                          }`}>
+                          <p className={`text-xs font-bold ${selected ? 'text-indigo-700' : 'text-gray-600'}`}>
+                            {isAM ? '오전반차' : '오후반차'}
+                          </p>
+                          <p className={`text-xs mt-0.5 ${selected ? 'text-indigo-500' : 'text-gray-400'}`}>
+                            {isAM ? '09:00 ~ 13:00' : '14:00 ~ 18:00'}
+                          </p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500">시작일</label>
+                    <label className="text-xs text-gray-500">날짜{['HALF', 'HALF_DAY', 'QUARTER_DAY'].includes(form.type) ? '' : ' (시작)'}</label>
                     <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                      value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value, endDate: form.type === 'HALF_DAY' ? e.target.value : form.endDate })} required />
+                      value={form.startDate}
+                      onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-500">종료일</label>
-                    <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                      value={form.type === 'HALF_DAY' ? form.startDate : form.endDate}
-                      onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                      disabled={form.type === 'HALF_DAY'}
-                      required />
-                  </div>
+                  {!['HALF', 'HALF_DAY', 'QUARTER_DAY'].includes(form.type) && (
+                    <div>
+                      <label className="text-xs text-gray-500">종료일</label>
+                      <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
+                        value={form.endDate}
+                        onChange={(e) => setForm({ ...form, endDate: e.target.value })} required />
+                    </div>
+                  )}
                 </div>
-                {/* 반차 시간 선택 */}
+
+                {/* 대체휴가 — 자유 시간 선택 */}
                 {form.type === 'HALF_DAY' && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
                     <p className="text-xs font-medium text-amber-700">대체휴가 시간 선택</p>
@@ -422,6 +490,41 @@ export default function VacationsPage() {
                         return diff > 0 ? `${diff}시간` : '-'
                       })()})
                     </p>
+                  </div>
+                )}
+
+                {/* 반반차 — 시작 시간 선택, 종료는 +2h 자동 */}
+                {form.type === 'QUARTER_DAY' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                    <p className="text-xs font-medium text-blue-700">반반차 시간 선택</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500">시작 시간</label>
+                        <select className="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm mt-1 bg-white"
+                          value={form.startTime}
+                          onChange={(e) => {
+                            const st = e.target.value
+                            const [h, m] = st.split(':').map(Number)
+                            const et = `${String(h + 2).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+                            setForm({ ...form, startTime: st, endTime: et })
+                          }}>
+                          {Array.from({ length: 21 }, (_, i) => {
+                            const h = Math.floor(i / 2) + 8
+                            const m = i % 2 === 0 ? '00' : '30'
+                            if (h > 17) return null
+                            const val = `${String(h).padStart(2, '0')}:${m}`
+                            return <option key={val} value={val}>{val}</option>
+                          })}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">종료 시간 (자동)</label>
+                        <div className="w-full border border-blue-100 rounded-lg px-3 py-2 text-sm mt-1 bg-white text-blue-700 font-medium">
+                          {form.endTime}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-blue-600">{form.startTime} ~ {form.endTime} (2시간)</p>
                   </div>
                 )}
                 <div>

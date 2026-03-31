@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { logActivity } from '@/lib/activity'
+import { VACATION_TYPE_LABELS } from '@/lib/utils'
 
 export async function GET() {
   const session = await auth()
@@ -35,7 +36,14 @@ export async function POST(req: NextRequest) {
 
   // 중복 일정 검증
   const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
-  const isNewHalfDay = body.type === 'HALF_DAY'
+
+  // 타입별 실효 시간 범위 반환
+  const TIME_TYPES = new Set(['HALF_DAY', 'HALF_AM', 'HALF_PM', 'QUARTER_DAY'])
+  const getTimeBounds = (type: string, st?: string | null, et?: string | null) => {
+    if (type === 'HALF_AM') return { s: toMin('09:00'), e: toMin('13:00') }
+    if (type === 'HALF_PM') return { s: toMin('14:00'), e: toMin('18:00') }
+    return { s: toMin(st ?? '00:00'), e: toMin(et ?? '23:59') }
+  }
 
   const candidates = await prisma.vacationRequest.findMany({
     where: {
@@ -47,23 +55,25 @@ export async function POST(req: NextRequest) {
   })
 
   const conflicting = candidates.find((v) => {
-    // 둘 다 반차인 경우 → 시간 겹침 여부로 판단
-    if (isNewHalfDay && v.type === 'HALF_DAY') {
-      const newS = toMin(body.startTime ?? '09:00')
-      const newE = toMin(body.endTime   ?? '18:00')
-      const exS  = toMin(v.startTime    ?? '09:00')
-      const exE  = toMin(v.endTime      ?? '18:00')
-      return newS < exE && newE > exS
+    const newIsTime = TIME_TYPES.has(body.type)
+    const exIsTime  = TIME_TYPES.has(v.type)
+    // 둘 다 시간 기반 → 시간 겹침으로 판단
+    if (newIsTime && exIsTime) {
+      const nb = getTimeBounds(body.type, body.startTime, body.endTime)
+      const eb = getTimeBounds(v.type,    v.startTime,   v.endTime)
+      return nb.s < eb.e && nb.e > eb.s
     }
-    // 그 외(전일↔전일, 전일↔반차, 반차↔전일) → 날짜 겹침 자체가 충돌
+    // 그 외 → 날짜 겹침 자체가 충돌
     return true
   })
 
   if (conflicting) {
     const fmt = (d: Date) => d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
-    const isHalfConflict = isNewHalfDay && conflicting.type === 'HALF_DAY'
-    const msg = isHalfConflict
-      ? `해당 날짜에 ${conflicting.startTime} ~ ${conflicting.endTime} 대체휴가가 이미 등록되어 있습니다.`
+    const bothTime = TIME_TYPES.has(body.type) && TIME_TYPES.has(conflicting.type)
+    const eb = getTimeBounds(conflicting.type, conflicting.startTime, conflicting.endTime)
+    const toHHMM = (min: number) => `${String(Math.floor(min/60)).padStart(2,'0')}:${String(min%60).padStart(2,'0')}`
+    const msg = bothTime
+      ? `해당 날짜에 ${toHHMM(eb.s)} ~ ${toHHMM(eb.e)} ${VACATION_TYPE_LABELS[conflicting.type] ?? ''}이(가) 이미 등록되어 있습니다.`
       : `${fmt(conflicting.startDate)} ~ ${fmt(conflicting.endDate)} 기간에 이미 등록된 휴가가 있습니다.`
     return NextResponse.json({ error: msg }, { status: 409 })
   }
@@ -76,8 +86,8 @@ export async function POST(req: NextRequest) {
       type: body.type ?? 'ANNUAL',
       status: 'APPROVED',
       note: body.note,
-      startTime: body.type === 'HALF_DAY' ? (body.startTime ?? '09:00') : null,
-      endTime:   body.type === 'HALF_DAY' ? (body.endTime   ?? '18:00') : null,
+      startTime: TIME_TYPES.has(body.type) ? (body.startTime ?? '09:00') : null,
+      endTime:   TIME_TYPES.has(body.type) ? (body.endTime   ?? '18:00') : null,
     },
     include: {
       user: { select: { id: true, name: true, avatarColor: true } },
