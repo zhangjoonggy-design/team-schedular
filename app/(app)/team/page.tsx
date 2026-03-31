@@ -486,43 +486,46 @@ export default function TeamPage() {
                     return (
                       <div className="space-y-2 mt-3">
                         <p className="text-xs text-gray-400 font-medium">담당 과제</p>
-                        <div className={isExpanded ? 'max-h-64 overflow-y-auto pr-0.5 space-y-1.5' : 'max-h-36 overflow-hidden space-y-1.5'}>
+                        <div className={isExpanded ? 'max-h-64 overflow-y-auto pr-0.5 space-y-2' : 'max-h-40 overflow-hidden space-y-2'}>
                           {projectEntries.map(([projName, proj]) => {
                             const parentEntries = Array.from(proj.parentMap.entries())
                             return (
-                              <div key={projName} className="rounded-lg overflow-hidden">
-                                {/* 1단계: 프로젝트 — 색상 배경 + 굵은 텍스트 */}
-                                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-t-lg" style={{ backgroundColor: proj.color + '18' }}>
-                                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: proj.color }} />
+                              /* 프로젝트 박스: 왼쪽 컬러 바 + 테두리 + 그림자 */
+                              <div key={projName} className="rounded-xl border border-gray-200 shadow-sm overflow-hidden" style={{ borderLeftColor: proj.color, borderLeftWidth: 4 }}>
+
+                                {/* 1단계: 프로젝트 헤더 */}
+                                <div className="flex items-center gap-2 px-3 py-2" style={{ backgroundColor: proj.color + '14' }}>
                                   <span className="text-xs font-bold truncate" style={{ color: proj.color }}>{projName}</span>
                                 </div>
-                                {/* 2단계: 과제 — 흰 배경, 들여쓰기, 진한 회색 */}
-                                <div className="bg-white rounded-b-lg">
+
+                                {/* 2단계: 과제 목록 */}
+                                <div className="bg-white divide-y divide-gray-100">
                                   {parentEntries.map(([parentTitle, group]) => (
-                                    <div key={parentTitle}>
-                                      <div className="flex items-center gap-2 px-3 py-1.5">
-                                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-gray-500" />
-                                        <span className="text-xs font-semibold text-gray-700">{parentTitle}</span>
-                                      </div>
-                                      {/* 3단계: 상세과제 — 더 들여쓰기, 연한 회색 텍스트 */}
-                                      {group.subtasks.map((sub) => {
-                                        const isOverdue = sub.dueDate && new Date(sub.dueDate) < today
-                                        return (
-                                          <div key={sub.id} className="flex items-center justify-between gap-2 pl-7 pr-3 py-1 bg-gray-50">
-                                            <div className="flex items-center gap-1.5 min-w-0">
-                                              <div className="w-1 h-1 rounded-full flex-shrink-0 bg-gray-300" />
-                                              <span className="text-[11px] text-gray-400 truncate">{sub.title}</span>
-                                            </div>
-                                            {sub.dueDate && (
-                                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
-                                                isOverdue ? 'bg-red-100 text-red-500' : 'bg-gray-100 text-gray-400'
-                                              }`}>
-                                                {isOverdue ? '지연' : formatDate(sub.dueDate)}
-                                              </span>
-                                            )}
-                                          </div>
-                                        )
-                                      })}
+                                    <div key={parentTitle} className="px-3 pt-2 pb-1.5">
+
+                                      {/* 과제명 */}
+                                      <span className="text-xs font-semibold text-gray-700">{parentTitle}</span>
+
+                                      {/* 3단계: 상세과제 — 들여쓰기 박스 */}
+                                      {group.subtasks.length > 0 && (
+                                        <div className="mt-1.5 ml-2 rounded-md bg-gray-50 border border-gray-100 divide-y divide-gray-100 overflow-hidden">
+                                          {group.subtasks.map((sub) => {
+                                            const isOverdue = sub.dueDate && new Date(sub.dueDate) < today
+                                            return (
+                                              <div key={sub.id} className="flex items-center justify-between gap-2 px-2.5 py-1">
+                                                <span className="text-[11px] text-gray-400 truncate">{sub.title}</span>
+                                                {sub.dueDate && (
+                                                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
+                                                    isOverdue ? 'bg-red-100 text-red-500' : 'bg-white text-gray-400 border border-gray-200'
+                                                  }`}>
+                                                    {isOverdue ? '지연' : formatDate(sub.dueDate)}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
