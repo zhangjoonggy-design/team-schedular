@@ -26,12 +26,21 @@ interface User {
   }[]
 }
 
+interface ProjectTask {
+  id: string
+  title: string
+  status: string
+  parentTaskId: string | null
+}
+
 interface Project {
   id: string
   name: string
   color: string
-  tasks: { id: string; title: string; status: string }[]
+  tasks: ProjectTask[]
 }
+
+const PHASE_ORDER = ['분석', '설계', '구현', '테스트', '이행', '안정화']
 
 const AVATAR_COLORS = [
   '#6366f1', '#22c55e', '#f59e0b', '#ef4444',
@@ -102,7 +111,10 @@ function ProjectTaskSelector({
               {isSelected && isExpanded && project.tasks.length > 0 && (
                 <div className="bg-gray-50 border-t border-gray-100">
                   {project.tasks.map((task) => (
-                    <div key={task.id} className="flex items-center gap-2 px-3 py-2 pl-8 hover:bg-gray-100">
+                    <div key={task.id} className={cn(
+                      'flex items-center gap-2 px-3 py-2 hover:bg-gray-100',
+                      task.parentTaskId ? 'pl-12' : 'pl-8'
+                    )}>
                       <input
                         type="checkbox"
                         id={`task-${task.id}`}
@@ -110,7 +122,10 @@ function ProjectTaskSelector({
                         onChange={() => onToggleTask(task.id)}
                         className="w-3.5 h-3.5 rounded accent-indigo-600"
                       />
-                      <label htmlFor={`task-${task.id}`} className="text-xs text-gray-600 cursor-pointer flex-1">{task.title}</label>
+                      <label htmlFor={`task-${task.id}`} className="text-xs cursor-pointer flex-1 flex items-center gap-1">
+                        {task.parentTaskId && <span className="text-gray-300">└</span>}
+                        <span className={task.parentTaskId ? 'text-gray-500' : 'text-gray-700 font-medium'}>{task.title}</span>
+                      </label>
                     </div>
                   ))}
                 </div>
@@ -267,15 +282,23 @@ export default function TeamPage() {
   const fetchProjects = async () => {
     const res = await fetch('/api/projects')
     const data = await res.json()
-    setProjects(data.map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      color: p.color,
-      tasks: [
-        ...p.tasks,
-        ...p.tasks.flatMap((t: any) => t.subTasks ?? []),
-      ].filter((t: any) => t.status !== 'DONE'),
-    })))
+    setProjects(data.map((p: any) => {
+      const sorted: ProjectTask[] = []
+      for (const t of p.tasks.filter((t: any) => t.status !== 'DONE')) {
+        sorted.push({ id: t.id, title: t.title, status: t.status, parentTaskId: null })
+        const subs = (t.subTasks ?? [])
+          .filter((s: any) => s.status !== 'DONE')
+          .sort((a: any, b: any) => {
+            const ai = PHASE_ORDER.indexOf(a.title)
+            const bi = PHASE_ORDER.indexOf(b.title)
+            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+          })
+        for (const s of subs) {
+          sorted.push({ id: s.id, title: s.title, status: s.status, parentTaskId: t.id })
+        }
+      }
+      return { id: p.id, name: p.name, color: p.color, tasks: sorted }
+    }))
   }
 
   useEffect(() => {
