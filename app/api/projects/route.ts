@@ -23,12 +23,20 @@ export async function GET() {
   })
 
   const projectsWithProgress = projects.map((project) => {
-    // 프로젝트 진척율 = 상위 과제 진척율의 평균 (1/과제 수 * 100 기준)
+    // 프로젝트 진척율 = 상위 과제 진척율의 평균
     const progress = project.tasks.length > 0
       ? Math.round(project.tasks.reduce((sum, t) => sum + t.progressPercent, 0) / project.tasks.length)
       : 0
 
-    return { ...project, progress }
+    // 투입 인력 수 = 과제 담당자 중 고유 사용자 수
+    const assigneeIds = new Set<string>()
+    for (const task of project.tasks) {
+      for (const a of task.assignees) {
+        assigneeIds.add(a.user.id)
+      }
+    }
+
+    return { ...project, progress, memberCount: assigneeIds.size }
   })
 
   return NextResponse.json(projectsWithProgress)

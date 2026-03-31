@@ -17,6 +17,7 @@ interface Project {
   startDate: string | null
   endDate: string | null
   progress: number
+  memberCount: number
   owner: { id: string; name: string; avatarColor: string }
   _count: { issues: number }
   tasks: any[]
@@ -175,9 +176,14 @@ export default function ProjectsPage() {
                       </span>
                     )}
                   </div>
-                  {(project.startDate || project.endDate) && (
-                    <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400">
-                      {formatDate(project.startDate)} ~ {formatDate(project.endDate)}
+                  {(project.startDate || project.endDate || project.memberCount > 0) && (
+                    <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400 flex items-center justify-between gap-2">
+                      <span>{formatDate(project.startDate)} ~ {formatDate(project.endDate)}</span>
+                      {project.memberCount > 0 && (
+                        <span className="text-indigo-500 font-medium flex-shrink-0">
+                          총 {project.memberCount}명 투입 중
+                        </span>
+                      )}
                     </div>
                   )}
                 </Link>
