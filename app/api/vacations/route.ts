@@ -29,21 +29,38 @@ export async function POST(req: NextRequest) {
   const targetUserId = (isAdmin && body.userId) ? body.userId : session.user!.id!
 
   // 중복 일정 검증
-  const overlapping = await prisma.vacationRequest.findFirst({
+  const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
+  const isNewHalfDay = body.type === 'HALF_DAY'
+
+  const candidates = await prisma.vacationRequest.findMany({
     where: {
       userId: targetUserId,
       status: { not: 'REJECTED' },
       startDate: { lte: new Date(body.endDate) },
-      endDate: { gte: new Date(body.startDate) },
+      endDate:   { gte: new Date(body.startDate) },
     },
-    include: { user: { select: { name: true } } },
   })
-  if (overlapping) {
+
+  const conflicting = candidates.find((v) => {
+    // 둘 다 반차인 경우 → 시간 겹침 여부로 판단
+    if (isNewHalfDay && v.type === 'HALF_DAY') {
+      const newS = toMin(body.startTime ?? '09:00')
+      const newE = toMin(body.endTime   ?? '18:00')
+      const exS  = toMin(v.startTime    ?? '09:00')
+      const exE  = toMin(v.endTime      ?? '18:00')
+      return newS < exE && newE > exS
+    }
+    // 그 외(전일↔전일, 전일↔반차, 반차↔전일) → 날짜 겹침 자체가 충돌
+    return true
+  })
+
+  if (conflicting) {
     const fmt = (d: Date) => d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
-    return NextResponse.json(
-      { error: `${fmt(overlapping.startDate)} ~ ${fmt(overlapping.endDate)} 기간에 이미 등록된 휴가가 있습니다.` },
-      { status: 409 }
-    )
+    const isHalfConflict = isNewHalfDay && conflicting.type === 'HALF_DAY'
+    const msg = isHalfConflict
+      ? `해당 날짜에 ${conflicting.startTime} ~ ${conflicting.endTime} 반차가 이미 등록되어 있습니다.`
+      : `${fmt(conflicting.startDate)} ~ ${fmt(conflicting.endDate)} 기간에 이미 등록된 휴가가 있습니다.`
+    return NextResponse.json({ error: msg }, { status: 409 })
   }
 
   const vacation = await prisma.vacationRequest.create({
