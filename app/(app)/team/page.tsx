@@ -21,6 +21,8 @@ interface User {
       title: string
       status: string
       dueDate: string | null
+      parentTaskId: string | null
+      parentTask: { title: string } | null
       project: { name: string; color: string }
     }
   }[]
@@ -465,8 +467,11 @@ export default function TeamPage() {
                               <div key={a.task.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.task.project.color }} />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-gray-700 truncate">{a.task.title}</p>
-                                  <p className="text-xs text-gray-400">{a.task.project.name}</p>
+                                  <p className="text-xs font-medium text-gray-700 truncate">
+                                    {a.task.parentTask
+                                      ? `${a.task.project.name} - ${a.task.parentTask.title} - ${a.task.title}`
+                                      : `${a.task.project.name} - ${a.task.title}`}
+                                  </p>
                                 </div>
                                 {a.task.dueDate && (
                                   <p className={`text-xs flex-shrink-0 ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>

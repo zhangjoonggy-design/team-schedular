@@ -18,6 +18,8 @@ export async function GET() {
           task: {
             select: {
               id: true, title: true, status: true, dueDate: true,
+              parentTaskId: true,
+              parentTask: { select: { title: true } },
               project: { select: { name: true, color: true } },
             },
           },
