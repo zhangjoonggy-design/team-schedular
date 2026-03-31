@@ -23,13 +23,10 @@ export async function GET() {
   })
 
   const projectsWithProgress = projects.map((project) => {
-    const allTasks = [...project.tasks, ...project.tasks.flatMap((t) => t.subTasks)]
-    const totalHours = allTasks.reduce((sum, t) => sum + (t.estimatedHours ?? 1), 0)
-    const weightedProgress = allTasks.reduce(
-      (sum, t) => sum + t.progressPercent * (t.estimatedHours ?? 1),
-      0
-    )
-    const progress = totalHours > 0 ? Math.round(weightedProgress / totalHours) : 0
+    // 프로젝트 진척율 = 상위 과제 진척율의 평균 (1/과제 수 * 100 기준)
+    const progress = project.tasks.length > 0
+      ? Math.round(project.tasks.reduce((sum, t) => sum + t.progressPercent, 0) / project.tasks.length)
+      : 0
 
     return { ...project, progress }
   })
