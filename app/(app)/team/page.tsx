@@ -484,38 +484,53 @@ export default function TeamPage() {
                     const projectEntries = Array.from(projectMap.entries())
 
                     return (
-                      <div className="space-y-1.5">
-                        <p className="text-xs text-gray-500 font-medium mb-1">담당 과제</p>
-                        <div className={isExpanded ? 'max-h-56 overflow-y-auto pr-1 space-y-1.5' : 'max-h-32 overflow-hidden space-y-1.5'}>
+                      <div className="space-y-2 mt-3">
+                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">담당 과제</p>
+                        <div className={isExpanded ? 'max-h-64 overflow-y-auto pr-0.5 space-y-2' : 'max-h-36 overflow-hidden space-y-2'}>
                           {projectEntries.map(([projName, proj]) => {
                             const parentEntries = Array.from(proj.parentMap.entries())
                             return (
-                              <div key={projName} className="bg-gray-50 rounded-lg px-2.5 py-2">
-                                <div className="flex items-center gap-1.5 mb-1">
+                              <div key={projName} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+                                {/* 프로젝트 헤더 */}
+                                <div className="flex items-center gap-2 px-3 py-2" style={{ backgroundColor: proj.color + '22' }}>
                                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: proj.color }} />
-                                  <p className="text-xs font-semibold text-gray-700">[{projName}]</p>
+                                  <span className="text-xs font-bold truncate" style={{ color: proj.color }}>{projName}</span>
                                 </div>
-                                {parentEntries.map(([parentTitle, group], pi) => {
-                                  const isLast = pi === parentEntries.length - 1
-                                  return (
-                                    <div key={parentTitle} className="ml-2">
-                                      <p className="text-xs text-gray-600 font-medium">{isLast ? '└' : '├'} {parentTitle}</p>
-                                      {group.subtasks.map((sub) => {
-                                        const isOverdue = sub.dueDate && new Date(sub.dueDate) < today
-                                        return (
-                                          <div key={sub.id} className="ml-4 flex items-center justify-between gap-2">
-                                            <p className="text-xs text-gray-500">└ {sub.title}</p>
-                                            {sub.dueDate && (
-                                              <p className={`text-xs flex-shrink-0 ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
-                                                {isOverdue ? '지연' : formatDate(sub.dueDate)}
-                                              </p>
-                                            )}
-                                          </div>
-                                        )
-                                      })}
+                                {/* 과제 목록 */}
+                                <div className="bg-white divide-y divide-gray-50">
+                                  {parentEntries.map(([parentTitle, group]) => (
+                                    <div key={parentTitle} className="px-3 py-2">
+                                      {/* 상위 과제 */}
+                                      <div className="flex items-center gap-1.5 mb-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-sm flex-shrink-0 bg-gray-400" />
+                                        <span className="text-xs font-semibold text-gray-700">{parentTitle}</span>
+                                      </div>
+                                      {/* 상세 과제 */}
+                                      {group.subtasks.length > 0 && (
+                                        <div className="ml-3 border-l-2 border-dashed border-gray-200 pl-3 space-y-1">
+                                          {group.subtasks.map((sub) => {
+                                            const isOverdue = sub.dueDate && new Date(sub.dueDate) < today
+                                            return (
+                                              <div key={sub.id} className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                  <div className="w-1 h-1 rounded-full flex-shrink-0 bg-gray-300" />
+                                                  <span className="text-xs text-gray-500 truncate">{sub.title}</span>
+                                                </div>
+                                                {sub.dueDate && (
+                                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium flex-shrink-0 ${
+                                                    isOverdue ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'
+                                                  }`}>
+                                                    {isOverdue ? '지연' : formatDate(sub.dueDate)}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                      )}
                                     </div>
-                                  )
-                                })}
+                                  ))}
+                                </div>
                               </div>
                             )
                           })}
@@ -523,7 +538,7 @@ export default function TeamPage() {
                         {activeTasks.length > 3 && (
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleExpandedTasks(user.id) }}
-                            className="w-full text-xs text-indigo-500 hover:text-indigo-700 text-center py-1 hover:bg-indigo-50 rounded-lg transition-colors"
+                            className="w-full text-xs text-indigo-400 hover:text-indigo-600 text-center py-1.5 hover:bg-indigo-50 rounded-lg transition-colors border border-dashed border-indigo-200 hover:border-indigo-300"
                           >
                             {isExpanded ? '접기 ▲' : '더 보기 ▼'}
                           </button>
