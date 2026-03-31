@@ -284,15 +284,14 @@ export default function TeamPage() {
     const data = await res.json()
     setProjects(data.map((p: any) => {
       const sorted: ProjectTask[] = []
-      for (const t of p.tasks.filter((t: any) => t.status !== 'DONE')) {
+      // 과제 → 하위 과제 순서로 정렬 (상태 무관하게 전체 표시)
+      for (const t of p.tasks) {
         sorted.push({ id: t.id, title: t.title, status: t.status, parentTaskId: null })
-        const subs = (t.subTasks ?? [])
-          .filter((s: any) => s.status !== 'DONE')
-          .sort((a: any, b: any) => {
-            const ai = PHASE_ORDER.indexOf(a.title)
-            const bi = PHASE_ORDER.indexOf(b.title)
-            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
-          })
+        const subs = (t.subTasks ?? []).slice().sort((a: any, b: any) => {
+          const ai = PHASE_ORDER.indexOf(a.title)
+          const bi = PHASE_ORDER.indexOf(b.title)
+          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+        })
         for (const s of subs) {
           sorted.push({ id: s.id, title: s.title, status: s.status, parentTaskId: t.id })
         }
