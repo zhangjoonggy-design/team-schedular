@@ -191,6 +191,8 @@ function AddTaskModal({
   parentTaskId,
   members,
   allUsers,
+  projectStartDate,
+  projectEndDate,
   onClose,
   onSave,
 }: {
@@ -198,6 +200,8 @@ function AddTaskModal({
   parentTaskId?: string
   members: Member[]
   allUsers: Member[]
+  projectStartDate?: string | null
+  projectEndDate?: string | null
   onClose: () => void
   onSave: () => void
 }) {
@@ -210,9 +214,25 @@ function AddTaskModal({
     estimatedHours: '',
     assigneeIds: [] as string[],
   })
+  const [dateAlert, setDateAlert] = useState<string | null>(null)
+
+  const projStart = projectStartDate ? projectStartDate.slice(0, 10) : null
+  const projEnd = projectEndDate ? projectEndDate.slice(0, 10) : null
+
+  const validateDates = (): string | null => {
+    if (form.startDate && projStart && form.startDate < projStart)
+      return `시작일(${form.startDate})이 프로젝트 시작일(${projStart})보다 앞설 수 없습니다.`
+    if (form.dueDate && projEnd && form.dueDate > projEnd)
+      return `마감일(${form.dueDate})이 프로젝트 종료일(${projEnd})을 초과할 수 없습니다.`
+    if (form.startDate && form.dueDate && form.startDate > form.dueDate)
+      return '시작일은 마감일보다 이전이어야 합니다.'
+    return null
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const error = validateDates()
+    if (error) { setDateAlert(error); return }
     await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -242,6 +262,21 @@ function AddTaskModal({
         <h3 className="font-semibold text-gray-800 mb-4">
           {parentTaskId ? '하위 과제 추가' : '과제 추가'}
         </h3>
+        {(projStart || projEnd) && (
+          <p className="text-xs text-indigo-600 bg-indigo-50 rounded-lg px-3 py-2 mb-3">
+            프로젝트 허용 기간: {projStart ?? '?'} ~ {projEnd ?? '?'}
+          </p>
+        )}
+        {dateAlert && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 mb-3">
+            <span className="text-red-500 text-base leading-none mt-0.5">⚠</span>
+            <div>
+              <p className="text-sm font-medium text-red-700">일정 범위 초과</p>
+              <p className="text-xs text-red-600 mt-0.5">{dateAlert}</p>
+            </div>
+            <button type="button" onClick={() => setDateAlert(null)} className="ml-auto text-red-400 hover:text-red-600 text-lg leading-none">×</button>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
             className="w-full border rounded-lg px-3 py-2 text-sm"
@@ -274,12 +309,18 @@ function AddTaskModal({
             <div>
               <label className="text-xs text-gray-500">시작일</label>
               <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+                value={form.startDate}
+                min={projStart ?? undefined}
+                max={projEnd ?? undefined}
+                onChange={(e) => { setDateAlert(null); setForm({ ...form, startDate: e.target.value }) }} />
             </div>
             <div>
               <label className="text-xs text-gray-500">마감일</label>
               <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+                value={form.dueDate}
+                min={projStart ?? undefined}
+                max={projEnd ?? undefined}
+                onChange={(e) => { setDateAlert(null); setForm({ ...form, dueDate: e.target.value }) }} />
             </div>
           </div>
           <div>
@@ -344,6 +385,8 @@ function EditTaskModal({
   parentTask,
   members,
   allUsers,
+  projectStartDate,
+  projectEndDate,
   onClose,
   onSave,
 }: {
@@ -351,6 +394,8 @@ function EditTaskModal({
   parentTask?: Task
   members: Member[]
   allUsers: Member[]
+  projectStartDate?: string | null
+  projectEndDate?: string | null
   onClose: () => void
   onSave: () => void
 }) {
@@ -374,20 +419,21 @@ function EditTaskModal({
     }))
   }
 
-  const validateDates = (): string | null => {
-    if (!parentTask) return null
-    const parentStart = parentTask.startDate ? parentTask.startDate.slice(0, 10) : null
-    const parentEnd = parentTask.dueDate ? parentTask.dueDate.slice(0, 10) : null
+  const projStart = parentTask
+    ? (parentTask.startDate ? parentTask.startDate.slice(0, 10) : null)
+    : (projectStartDate ? projectStartDate.slice(0, 10) : null)
+  const projEnd = parentTask
+    ? (parentTask.dueDate ? parentTask.dueDate.slice(0, 10) : null)
+    : (projectEndDate ? projectEndDate.slice(0, 10) : null)
 
-    if (form.startDate && parentStart && form.startDate < parentStart) {
-      return `시작일(${form.startDate})이 상위 과제 시작일(${parentStart})보다 앞설 수 없습니다.`
-    }
-    if (form.dueDate && parentEnd && form.dueDate > parentEnd) {
-      return `마감일(${form.dueDate})이 상위 과제 마감일(${parentEnd})을 초과할 수 없습니다.`
-    }
-    if (form.startDate && form.dueDate && form.startDate > form.dueDate) {
+  const validateDates = (): string | null => {
+    const rangeLabel = parentTask ? '상위 과제' : '프로젝트'
+    if (form.startDate && projStart && form.startDate < projStart)
+      return `시작일(${form.startDate})이 ${rangeLabel} 시작일(${projStart})보다 앞설 수 없습니다.`
+    if (form.dueDate && projEnd && form.dueDate > projEnd)
+      return `마감일(${form.dueDate})이 ${rangeLabel} 종료일(${projEnd})을 초과할 수 없습니다.`
+    if (form.startDate && form.dueDate && form.startDate > form.dueDate)
       return '시작일은 마감일보다 이전이어야 합니다.'
-    }
     return null
   }
 
@@ -416,9 +462,9 @@ function EditTaskModal({
         <h3 className="font-semibold text-gray-800 mb-4">
           {parentTask ? `상세 일정 수정 — ${task.title}` : '과제 수정'}
         </h3>
-        {parentTask && (parentTask.startDate || parentTask.dueDate) && (
+        {(projStart || projEnd) && (
           <p className="text-xs text-indigo-600 bg-indigo-50 rounded-lg px-3 py-2 mb-3">
-            상위 과제 허용 기간: {parentTask.startDate?.slice(0, 10) ?? '?'} ~ {parentTask.dueDate?.slice(0, 10) ?? '?'}
+            {parentTask ? '상위 과제' : '프로젝트'} 허용 기간: {projStart ?? '?'} ~ {projEnd ?? '?'}
           </p>
         )}
         {/* 날짜 오류 안내 팝업 */}
@@ -465,16 +511,16 @@ function EditTaskModal({
               <label className="text-xs text-gray-500">시작일</label>
               <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
                 value={form.startDate}
-                min={parentTask?.startDate?.slice(0, 10)}
-                max={parentTask?.dueDate?.slice(0, 10)}
+                min={projStart ?? undefined}
+                max={projEnd ?? undefined}
                 onChange={(e) => { setDateAlert(null); setForm({ ...form, startDate: e.target.value }) }} />
             </div>
             <div>
               <label className="text-xs text-gray-500">마감일</label>
               <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
                 value={form.dueDate}
-                min={parentTask?.startDate?.slice(0, 10)}
-                max={parentTask?.dueDate?.slice(0, 10)}
+                min={projStart ?? undefined}
+                max={projEnd ?? undefined}
                 onChange={(e) => { setDateAlert(null); setForm({ ...form, dueDate: e.target.value }) }} />
             </div>
           </div>
@@ -898,6 +944,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             parentTaskId={addingSubtaskTo}
             members={project.members.map((m) => m.user)}
             allUsers={allUsers}
+            projectStartDate={project.startDate}
+            projectEndDate={project.endDate}
             onClose={() => { setShowAddTask(false); setAddingSubtaskTo(undefined) }}
             onSave={fetchProject}
           />
@@ -908,6 +956,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             parentTask={editingTaskParent}
             members={project.members.map((m) => m.user)}
             allUsers={allUsers}
+            projectStartDate={project.startDate}
+            projectEndDate={project.endDate}
             onClose={() => { setEditingTask(null); setEditingTaskParent(undefined) }}
             onSave={fetchProject}
           />
