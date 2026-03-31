@@ -670,21 +670,38 @@ function GanttChart({ tasks }: { tasks: Task[] }) {
                   <div className="absolute rounded-full opacity-10"
                     style={{ left: getX(task.startDate), width: getW(task.startDate!, task.dueDate!), top: '50%', transform: 'translateY(-50%)', height: 30, backgroundColor: '#6366f1' }} />
                   {/* 단계 바 */}
-                  {phases.length > 0 ? phases.map((phase) => (
-                    <div key={phase.id}
-                      className="absolute rounded-sm flex items-center overflow-hidden cursor-default"
-                      style={{
-                        left: getX(phase.startDate),
-                        width: getW(phase.startDate!, phase.dueDate!),
-                        top: '50%', transform: 'translateY(-50%)',
-                        height: 30,
-                        backgroundColor: PHASE_COLORS[phase.title] ?? '#6366f1',
-                      }}
-                      title={`${phase.title}: ${formatDate(phase.startDate)} ~ ${formatDate(phase.dueDate)}`}
-                    >
-                      <span className="text-white text-[10px] font-semibold px-1.5 truncate select-none">{phase.title}</span>
-                    </div>
-                  )) : (
+                  {phases.length > 0 ? phases.map((phase) => {
+                    const isDone = phase.status === 'DONE' || phase.progressPercent === 100
+                    const phaseColor = PHASE_COLORS[phase.title] ?? '#6366f1'
+                    return (
+                      <div key={phase.id}
+                        className="absolute rounded-sm overflow-hidden cursor-default"
+                        style={{
+                          left: getX(phase.startDate),
+                          width: getW(phase.startDate!, phase.dueDate!),
+                          top: '50%', transform: 'translateY(-50%)',
+                          height: 30,
+                          backgroundColor: phaseColor + '30',
+                          border: `1.5px solid ${phaseColor}`,
+                        }}
+                        title={`${phase.title}: ${phase.progressPercent}% | ${formatDate(phase.startDate)} ~ ${formatDate(phase.dueDate)}`}
+                      >
+                        {/* 진척율 채우기 */}
+                        <div className="absolute top-0 left-0 bottom-0 transition-all duration-300"
+                          style={{ width: `${phase.progressPercent}%`, backgroundColor: phaseColor, opacity: isDone ? 1 : 0.8 }} />
+                        {/* 완료 시 대각선 패턴 오버레이 */}
+                        {isDone && (
+                          <div className="absolute inset-0 opacity-20"
+                            style={{ backgroundImage: 'repeating-linear-gradient(45deg, #fff 0px, #fff 3px, transparent 3px, transparent 8px)' }} />
+                        )}
+                        {/* 레이블 */}
+                        <div className="absolute inset-0 flex items-center px-1.5 gap-0.5">
+                          {isDone && <span className="text-white text-[10px] font-bold drop-shadow-sm select-none">✓</span>}
+                          <span className="text-white text-[10px] font-semibold truncate select-none drop-shadow-sm">{phase.title}</span>
+                        </div>
+                      </div>
+                    )
+                  }) : (
                     <div className="absolute rounded-sm flex items-center overflow-hidden"
                       style={{ left: getX(task.startDate), width: getW(task.startDate!, task.dueDate!), top: '50%', transform: 'translateY(-50%)', height: 30, backgroundColor: '#6366f1' }}>
                       <span className="text-white text-[10px] font-semibold px-1.5 truncate select-none">{task.title}</span>
