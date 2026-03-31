@@ -59,6 +59,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
+
+  // 하위 과제(단계별 상세일정) 먼저 삭제 — TaskAssignee 등 연관 레코드는 cascade로 자동 삭제
+  await prisma.task.deleteMany({ where: { parentTaskId: id } })
   await prisma.task.delete({ where: { id } })
 
   return NextResponse.json({ success: true })
