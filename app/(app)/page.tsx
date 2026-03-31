@@ -8,10 +8,15 @@ import { formatDate, STATUS_LABELS, VACATION_TYPE_LABELS } from '@/lib/utils'
 import Link from 'next/link'
 
 async function getDashboardData() {
-  const [projects, issues, vacations, tasks] = await Promise.all([
+  const [projects, issues, vacations, tasks, members] = await Promise.all([
     prisma.project.findMany({
       include: {
-        tasks: { include: { subTasks: true } },
+        tasks: {
+          include: {
+            subTasks: true,
+            assignees: { include: { user: { select: { id: true } } } },
+          },
+        },
         _count: { select: { issues: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -47,21 +52,37 @@ async function getDashboardData() {
       orderBy: { dueDate: 'asc' },
       take: 5,
     }),
+    // 투입인력: 진행 중 과제가 있는 팀원
+    prisma.user.findMany({
+      where: { taskAssignments: { some: { task: { status: { notIn: ['DONE'] } } } } },
+      select: {
+        id: true, name: true, avatarColor: true,
+        taskAssignments: {
+          where: { task: { status: { notIn: ['DONE'] } } },
+          select: {
+            task: { select: { project: { select: { name: true, color: true } } } },
+          },
+        },
+      },
+      orderBy: { name: 'asc' },
+    }),
   ])
 
   const projectsWithProgress = projects.map((p) => {
     const allTasks = [...p.tasks, ...p.tasks.flatMap((t) => t.subTasks)]
     const total = allTasks.reduce((s, t) => s + (t.estimatedHours ?? 1), 0)
     const weighted = allTasks.reduce((s, t) => s + t.progressPercent * (t.estimatedHours ?? 1), 0)
-    return { ...p, progress: total > 0 ? Math.round(weighted / total) : 0 }
+    const progress = total > 0 ? Math.round(weighted / total) : 0
+    const assigneeIds = new Set(p.tasks.flatMap((t) => t.assignees.map((a) => a.user.id)))
+    return { ...p, progress, memberCount: assigneeIds.size }
   })
 
-  return { projects: projectsWithProgress, issues, vacations, tasks }
+  return { projects: projectsWithProgress, issues, vacations, tasks, members }
 }
 
 export default async function DashboardPage() {
   const session = await auth()
-  const { projects, issues, vacations, tasks } = await getDashboardData()
+  const { projects, issues, vacations, tasks, members } = await getDashboardData()
 
   const activeProjects = projects.filter((p) => p.status === 'ACTIVE')
   const openIssues = issues.length
@@ -101,9 +122,12 @@ export default async function DashboardPage() {
               {projects.slice(0, 5).map((p) => (
                 <Link key={p.id} href={`/projects/${p.id}`} className="block group">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-                      <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600">{p.name}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 truncate">{p.name}</span>
+                      {p.memberCount > 0 && (
+                        <span className="text-xs text-indigo-500 font-medium flex-shrink-0">{p.memberCount}명</span>
+                      )}
                     </div>
                     <StatusBadge status={p.status} />
                   </div>
@@ -138,6 +162,44 @@ export default async function DashboardPage() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* 투입인력 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-800">투입인력</h3>
+            <span className="text-xs text-indigo-600 font-medium">총 {members.length}명 투입 중</span>
+          </div>
+          {members.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-4">투입된 인력이 없습니다</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {members.map((m) => {
+                const projects = [...new Map(
+                  m.taskAssignments.map((a) => [a.task.project.name, a.task.project])
+                ).values()]
+                return (
+                  <div key={m.id} className="flex items-center gap-2.5 p-2.5 bg-gray-50 rounded-lg">
+                    <UserAvatar name={m.name} avatarColor={m.avatarColor} size="sm" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-800 truncate">{m.name}</p>
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {projects.slice(0, 2).map((p) => (
+                          <span key={p.name} className="text-[10px] px-1.5 py-0.5 rounded-full text-white font-medium truncate max-w-[80px]"
+                            style={{ backgroundColor: p.color }}>
+                            {p.name}
+                          </span>
+                        ))}
+                        {projects.length > 2 && (
+                          <span className="text-[10px] text-gray-400">+{projects.length - 2}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
