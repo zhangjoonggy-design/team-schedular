@@ -242,6 +242,17 @@ export default function VacationsPage() {
     e.preventDefault()
     setFormError('')
 
+    // 과거 날짜 검증 (관리자 제외)
+    if (!isAdmin) {
+      const todayStr = new Date().toISOString().slice(0, 10)
+      if (form.startDate < todayStr) {
+        setFormError('과거 날짜에는 휴가를 등록할 수 없습니다.'); return
+      }
+      if (form.endDate && !['HALF', 'HALF_DAY', 'QUARTER_DAY'].includes(form.type) && form.endDate < todayStr) {
+        setFormError('과거 날짜에는 휴가를 등록할 수 없습니다.'); return
+      }
+    }
+
     // 휴일 검증
     if (form.startDate && isHolidayOrWeekend(form.startDate)) {
       setFormError(holidayErrorMsg(form.startDate, '시작일')); return

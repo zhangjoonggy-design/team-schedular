@@ -30,6 +30,17 @@ export async function POST(req: NextRequest) {
   const isAdmin = sessionUser?.role === 'ADMIN'
   const targetUserId = (isAdmin && body.userId) ? body.userId : session.user!.id!
 
+  // 과거 날짜 검증 (관리자 제외)
+  if (!isAdmin) {
+    const todayStr = new Date().toISOString().slice(0, 10)
+    if (body.startDate < todayStr) {
+      return NextResponse.json({ error: '과거 날짜에는 휴가를 등록할 수 없습니다.' }, { status: 400 })
+    }
+    if (body.endDate && body.endDate !== body.startDate && body.endDate < todayStr) {
+      return NextResponse.json({ error: '과거 날짜에는 휴가를 등록할 수 없습니다.' }, { status: 400 })
+    }
+  }
+
   // 시작일·종료일 휴일 검증
   if (isHolidayOrWeekend(body.startDate)) {
     return NextResponse.json({ error: holidayErrorMsg(body.startDate, '시작일') }, { status: 400 })
