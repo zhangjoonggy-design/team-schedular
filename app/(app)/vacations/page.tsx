@@ -400,7 +400,7 @@ export default function VacationsPage() {
                     onChange={(e) => {
                       const t = e.target.value
                       const defaultST = '09:00'
-                      const defaultET = t === 'QUARTER_DAY' ? '11:00' : '18:00'
+                      const defaultET = t === 'QUARTER_DAY' ? '11:00' : '18:00'  // 09:00 + 2h
                       setForm({ ...form, type: t, startTime: defaultST, endTime: defaultET, halfSubType: 'AM' })
                     }}>
                     {FORM_TYPE_OPTIONS.map(({ value, label }) => (
@@ -508,11 +508,9 @@ export default function VacationsPage() {
                             const et = `${String(h + 2).padStart(2, '0')}:${String(m).padStart(2, '0')}`
                             setForm({ ...form, startTime: st, endTime: et })
                           }}>
-                          {Array.from({ length: 21 }, (_, i) => {
-                            const h = Math.floor(i / 2) + 8
-                            const m = i % 2 === 0 ? '00' : '30'
-                            if (h > 17) return null
-                            const val = `${String(h).padStart(2, '0')}:${m}`
+                          {Array.from({ length: 9 }, (_, i) => {
+                            const h = i + 8
+                            const val = `${String(h).padStart(2, '0')}:00`
                             return <option key={val} value={val}>{val}</option>
                           })}
                         </select>
