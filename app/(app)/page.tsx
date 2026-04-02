@@ -89,7 +89,7 @@ export default async function DashboardPage() {
             <p className="text-2xl font-bold text-indigo-600 mt-1">{activeProjects.length}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <p className="text-xs text-gray-500">오픈 이슈</p>
+            <p className="text-xs text-gray-500">이슈</p>
             <p className="text-2xl font-bold text-red-500 mt-1">{issueCount}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-gray-200">
@@ -139,10 +139,10 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* 오픈 이슈 */}
+          {/* 이슈 */}
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-800">오픈 이슈</h3>
+              <h3 className="font-semibold text-gray-800">이슈</h3>
               <Link href="/issues" className="text-xs text-indigo-600 hover:underline">전체 보기</Link>
             </div>
             <div className="space-y-3">
@@ -157,7 +157,7 @@ export default async function DashboardPage() {
                 </div>
               ))}
               {issues.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">오픈 이슈 없음</p>
+                <p className="text-sm text-gray-500 text-center py-4">이슈 없음</p>
               )}
             </div>
           </div>
