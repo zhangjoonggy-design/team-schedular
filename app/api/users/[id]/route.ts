@@ -26,6 +26,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       name: body.name,
       email: body.email,
       role: body.role,
+      position: body.position ?? '',
       avatarColor: body.avatarColor,
     }
 
@@ -36,7 +37,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const user = await prisma.user.update({
       where: { id },
       data: updateData,
-      select: { id: true, name: true, email: true, role: true, avatarColor: true },
+      select: { id: true, name: true, email: true, role: true, position: true, avatarColor: true },
     })
 
     // 프로젝트 멤버 교체

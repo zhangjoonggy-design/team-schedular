@@ -10,7 +10,7 @@ export async function GET() {
 
   const users = await prisma.user.findMany({
     select: {
-      id: true, name: true, email: true, role: true, avatarColor: true, createdAt: true,
+      id: true, name: true, email: true, role: true, position: true, avatarColor: true, createdAt: true,
       projectMembers: { select: { projectId: true } },
       taskAssignments: {
         where: { task: { status: { notIn: ['DONE'] } } },
@@ -52,9 +52,10 @@ export async function POST(req: NextRequest) {
         email: body.email,
         passwordHash,
         role: body.role ?? 'MEMBER',
+        position: body.position ?? '',
         avatarColor: body.avatarColor ?? '#6366f1',
       },
-      select: { id: true, name: true, email: true, role: true, avatarColor: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, position: true, avatarColor: true, createdAt: true },
     })
 
     if (body.projectIds?.length) {

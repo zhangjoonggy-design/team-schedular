@@ -7,11 +7,35 @@ import { formatDate } from '@/lib/utils'
 import { Plus, ChevronDown, ChevronRight, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+const POSITION_OPTIONS = [
+  { value: '', label: '선택 안 함' },
+  { value: '프로젝트 PM', label: '프로젝트 PM' },
+  { value: '현업 PM',    label: '현업 PM' },
+  { value: '개발 PL',   label: '개발 PL' },
+  { value: '개발자',    label: '개발자' },
+  { value: '디자이너',  label: '디자이너' },
+  { value: '퍼블',      label: '퍼블' },
+  { value: '기획',      label: '기획' },
+  { value: 'SM개발',    label: 'SM개발' },
+]
+
+const POSITION_COLORS: Record<string, string> = {
+  '프로젝트 PM': 'bg-indigo-100 text-indigo-700',
+  '현업 PM':    'bg-blue-100 text-blue-700',
+  '개발 PL':   'bg-violet-100 text-violet-700',
+  '개발자':    'bg-green-100 text-green-700',
+  '디자이너':  'bg-pink-100 text-pink-700',
+  '퍼블':      'bg-orange-100 text-orange-700',
+  '기획':      'bg-amber-100 text-amber-700',
+  'SM개발':    'bg-teal-100 text-teal-700',
+}
+
 interface User {
   id: string
   name: string
   email: string
   role: string
+  position: string
   avatarColor: string
   createdAt: string
   projectMembers?: { projectId: string }[]
@@ -54,13 +78,14 @@ type FormState = {
   email: string
   password: string
   role: string
+  position: string
   avatarColor: string
   projectIds: string[]
   taskIds: string[]
 }
 
 const DEFAULT_FORM: FormState = {
-  name: '', email: '', password: '', role: 'MEMBER',
+  name: '', email: '', password: '', role: 'MEMBER', position: '',
   avatarColor: '#6366f1', projectIds: [], taskIds: [],
 }
 
@@ -221,6 +246,15 @@ function UserFormModal({
             </select>
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">역할</label>
+            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              value={form.position} onChange={e => setForm({ ...form, position: e.target.value })}>
+              {POSITION_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">아바타 색상</label>
             <div className="flex gap-2 flex-wrap">
               {AVATAR_COLORS.map(color => (
@@ -328,6 +362,7 @@ export default function TeamPage() {
       email: user.email,
       password: '',
       role: user.role,
+      position: user.position ?? '',
       avatarColor: user.avatarColor,
       projectIds: currentProjectIds,
       taskIds: currentTaskIds,
@@ -407,8 +442,13 @@ export default function TeamPage() {
                   <div className="flex items-center gap-3 mb-4">
                     <UserAvatar name={user.name} avatarColor={user.avatarColor} size="lg" />
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-gray-800">{user.name}</h3>
+                        {user.position && (
+                          <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', POSITION_COLORS[user.position] ?? 'bg-gray-100 text-gray-600')}>
+                            {user.position}
+                          </span>
+                        )}
                         {user.role === 'ADMIN' && (
                           <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">관리자</span>
                         )}

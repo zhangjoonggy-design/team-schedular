@@ -13,6 +13,7 @@ model User {
   email        String   @unique
   passwordHash String
   role         String   @default("MEMBER")
+  position     String   @default("")
   avatarColor  String   @default("#6366f1")
   createdAt    DateTime @default(now())
 
