@@ -52,19 +52,9 @@ async function getDashboardData() {
       orderBy: { dueDate: 'asc' },
       take: 5,
     }),
-    // 투입인력: 진행 중 과제가 있는 팀원
-    prisma.user.findMany({
+    // 투입인력: 진행 중 과제가 있는 팀원 수
+    prisma.user.count({
       where: { taskAssignments: { some: { task: { status: { notIn: ['DONE'] } } } } },
-      select: {
-        id: true, name: true, avatarColor: true,
-        taskAssignments: {
-          where: { task: { status: { notIn: ['DONE'] } } },
-          select: {
-            task: { select: { project: { select: { name: true, color: true } } } },
-          },
-        },
-      },
-      orderBy: { name: 'asc' },
     }),
   ])
 
@@ -77,12 +67,12 @@ async function getDashboardData() {
     return { ...p, progress, memberCount: assigneeIds.size }
   })
 
-  return { projects: projectsWithProgress, issues, vacations, tasks, members }
+  return { projects: projectsWithProgress, issues, vacations, tasks, memberCount: members }
 }
 
 export default async function DashboardPage() {
   const session = await auth()
-  const { projects, issues, vacations, tasks, members } = await getDashboardData()
+  const { projects, issues, vacations, tasks, memberCount } = await getDashboardData()
 
   const activeProjects = projects.filter((p) => p.status === 'ACTIVE')
   const openIssues = issues.length
@@ -92,7 +82,7 @@ export default async function DashboardPage() {
       <Header title="대시보드" />
       <main className="flex-1 p-4 md:p-6 space-y-6">
         {/* 요약 카드 */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="bg-white rounded-xl p-4 border border-gray-200">
             <p className="text-xs text-gray-500">진행중 프로젝트</p>
             <p className="text-2xl font-bold text-indigo-600 mt-1">{activeProjects.length}</p>
@@ -100,6 +90,10 @@ export default async function DashboardPage() {
           <div className="bg-white rounded-xl p-4 border border-gray-200">
             <p className="text-xs text-gray-500">오픈 이슈</p>
             <p className="text-2xl font-bold text-red-500 mt-1">{openIssues}</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <p className="text-xs text-gray-500">투입인력</p>
+            <p className="text-2xl font-bold text-teal-500 mt-1">{memberCount}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-gray-200">
             <p className="text-xs text-gray-500">이번주 휴가자</p>
@@ -162,44 +156,6 @@ export default async function DashboardPage() {
               )}
             </div>
           </div>
-        </div>
-
-        {/* 투입인력 */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-800">투입인력</h3>
-            <span className="text-xs text-indigo-600 font-medium">총 {members.length}명 투입 중</span>
-          </div>
-          {members.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">투입된 인력이 없습니다</p>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {members.map((m) => {
-                const projects = [...new Map(
-                  m.taskAssignments.map((a) => [a.task.project.name, a.task.project])
-                ).values()]
-                return (
-                  <div key={m.id} className="flex items-center gap-2.5 p-2.5 bg-gray-50 rounded-lg">
-                    <UserAvatar name={m.name} avatarColor={m.avatarColor} size="sm" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-gray-800 truncate">{m.name}</p>
-                      <div className="flex flex-wrap gap-1 mt-0.5">
-                        {projects.slice(0, 2).map((p) => (
-                          <span key={p.name} className="text-[10px] px-1.5 py-0.5 rounded-full text-white font-medium truncate max-w-[80px]"
-                            style={{ backgroundColor: p.color }}>
-                            {p.name}
-                          </span>
-                        ))}
-                        {projects.length > 2 && (
-                          <span className="text-[10px] text-gray-400">+{projects.length - 2}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
