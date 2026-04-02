@@ -14,6 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       where: { id },
       include: {
         owner: { select: { id: true, name: true, avatarColor: true } },
+        bizPm: { select: { id: true, name: true } },
         tasks: {
           where: { parentTaskId: null },
           include: {
@@ -26,6 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
               orderBy: { createdAt: 'asc' },
             },
             assignees: { include: { user: { select: { id: true, name: true, avatarColor: true } } } },
+            devPl: { select: { id: true, name: true } },
             issues: true,
           },
           orderBy: { createdAt: 'asc' },
@@ -70,6 +72,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       status: body.status,
       startDate: body.startDate ? new Date(body.startDate) : null,
       endDate: body.endDate ? new Date(body.endDate) : null,
+      bizPmId: body.bizPmId !== undefined ? (body.bizPmId || null) : undefined,
     },
   })
 

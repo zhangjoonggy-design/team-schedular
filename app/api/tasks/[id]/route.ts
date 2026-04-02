@@ -39,6 +39,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
   if ('status' in body) data.status = body.status
+  if ('devPlId' in body) data.devPlId = body.devPlId || null
 
   const task = await prisma.task.update({ where: { id }, data })
 

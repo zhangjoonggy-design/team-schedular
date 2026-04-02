@@ -18,6 +18,8 @@ model User {
   createdAt    DateTime @default(now())
 
   ownedProjects   Project[]         @relation("ProjectOwner")
+  bizPmProjects   Project[]         @relation("ProjectBizPm")
+  devPlTasks      Task[]            @relation("TaskDevPl")
   projectMembers  ProjectMember[]
   taskAssignments TaskAssignee[]
   reportedIssues  Issue[]           @relation("IssueReporter")
@@ -35,9 +37,11 @@ model Project {
   startDate   DateTime?
   endDate     DateTime?
   ownerId     String
+  bizPmId     String?
   createdAt   DateTime  @default(now())
 
   owner   User            @relation("ProjectOwner", fields: [ownerId], references: [id])
+  bizPm   User?           @relation("ProjectBizPm", fields: [bizPmId], references: [id])
   members ProjectMember[]
   tasks   Task[]
   issues  Issue[]
@@ -65,11 +69,13 @@ model Task {
   dueDate         DateTime?
   progressPercent Int       @default(0)
   estimatedHours  Float?
+  devPlId         String?
   createdAt       DateTime  @default(now())
 
   project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   parentTask Task?          @relation("SubTasks", fields: [parentTaskId], references: [id])
   subTasks   Task[]         @relation("SubTasks")
+  devPl      User?          @relation("TaskDevPl", fields: [devPlId], references: [id])
   assignees  TaskAssignee[]
   issues     Issue[]
   comments   Comment[]

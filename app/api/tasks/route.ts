@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
       dueDate: body.dueDate ? new Date(body.dueDate) : null,
       progressPercent: body.progressPercent ?? 0,
       estimatedHours: body.estimatedHours ?? null,
+      devPlId: body.devPlId || null,
     },
   })
 

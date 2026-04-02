@@ -10,11 +10,13 @@ export async function GET() {
   const projects = await prisma.project.findMany({
     include: {
       owner: { select: { id: true, name: true, avatarColor: true } },
+      bizPm: { select: { id: true, name: true } },
       tasks: {
         where: { parentTaskId: null },
         include: {
           subTasks: true,
           assignees: { include: { user: { select: { id: true, name: true, avatarColor: true } } } },
+          devPl: { select: { id: true, name: true } },
         },
       },
       _count: { select: { issues: true } },
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest) {
       startDate: body.startDate ? new Date(body.startDate) : null,
       endDate: body.endDate ? new Date(body.endDate) : null,
       ownerId: session.user!.id!,
+      bizPmId: body.bizPmId || null,
     },
   })
 

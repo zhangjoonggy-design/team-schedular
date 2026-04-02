@@ -19,12 +19,19 @@ interface Project {
   progress: number
   memberCount: number
   owner: { id: string; name: string; avatarColor: string }
+  bizPm: { id: string; name: string } | null
   _count: { issues: number }
-  tasks: any[]
+  tasks: { devPl: { id: string; name: string } | null }[]
+}
+
+interface UserOption {
+  id: string
+  name: string
 }
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
+  const [bizPmUsers, setBizPmUsers] = useState<UserOption[]>([])
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -35,6 +42,7 @@ export default function ProjectsPage() {
     status: 'ACTIVE',
     startDate: '',
     endDate: '',
+    bizPmId: '',
   })
 
   const fetchProjects = async () => {
@@ -44,7 +52,13 @@ export default function ProjectsPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchProjects() }, [])
+  const fetchBizPmUsers = async () => {
+    const res = await fetch('/api/users')
+    const data = await res.json()
+    setBizPmUsers(data.filter((u: any) => u.position === '현업 PM'))
+  }
+
+  useEffect(() => { fetchProjects(); fetchBizPmUsers() }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,7 +68,7 @@ export default function ProjectsPage() {
       body: JSON.stringify(form),
     })
     setShowForm(false)
-    setForm({ name: '', description: '', color: '#6366f1', status: 'ACTIVE', startDate: '', endDate: '' })
+    setForm({ name: '', description: '', color: '#6366f1', status: 'ACTIVE', startDate: '', endDate: '', bizPmId: '' })
     fetchProjects()
   }
 
@@ -116,6 +130,16 @@ export default function ProjectsPage() {
                   </div>
                 </div>
                 <div>
+                  <label className="text-xs text-gray-500 mb-1 block">현업 PM</label>
+                  <select className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
+                    value={form.bizPmId} onChange={(e) => setForm({ ...form, bizPmId: e.target.value })}>
+                    <option value="">선택 안 함</option>
+                    {bizPmUsers.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="text-xs text-gray-500 mb-1 block">색상</label>
                   <div className="flex gap-2">
                     {colors.map((c) => (
@@ -151,9 +175,22 @@ export default function ProjectsPage() {
                   className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow block"
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
                       <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
                       <h3 className="font-semibold text-gray-800 leading-tight truncate">{project.name}</h3>
+                      {project.bizPm && (
+                        <span className="text-xs bg-blue-50 text-blue-600 rounded-full px-2 py-0.5 font-medium flex-shrink-0">
+                          현업PM {project.bizPm.name}
+                        </span>
+                      )}
+                      {(() => {
+                        const devPlNames = [...new Set(project.tasks.map(t => t.devPl?.name).filter(Boolean))]
+                        return devPlNames.length > 0 ? (
+                          <span className="text-xs bg-violet-50 text-violet-600 rounded-full px-2 py-0.5 font-medium flex-shrink-0">
+                            개발PL {devPlNames.join(', ')}
+                          </span>
+                        ) : null
+                      })()}
                     </div>
                     <StatusBadge status={project.status} />
                   </div>

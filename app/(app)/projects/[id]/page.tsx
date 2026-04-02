@@ -202,12 +202,13 @@ function AddTaskModal({
   projectId: string
   parentTaskId?: string
   members: Member[]
-  allUsers: Member[]
+  allUsers: (Member & { position?: string })[]
   projectStartDate?: string | null
   projectEndDate?: string | null
   onClose: () => void
   onSave: () => void
 }) {
+  const devPlUsers = allUsers.filter((u) => u.position === '개발 PL')
   const [form, setForm] = useState({
     title: '',
     status: 'TODO',
@@ -216,6 +217,7 @@ function AddTaskModal({
     dueDate: '',
     estimatedHours: '',
     assigneeIds: [] as string[],
+    devPlId: '',
   })
   const [dateAlert, setDateAlert] = useState<string | null>(null)
 
@@ -326,6 +328,18 @@ function AddTaskModal({
                 onChange={(e) => { setDateAlert(null); setForm({ ...form, dueDate: e.target.value }) }} />
             </div>
           </div>
+          {!parentTaskId && (
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">개발 PL</label>
+              <select className="w-full border rounded-lg px-3 py-2 text-sm"
+                value={form.devPlId} onChange={(e) => setForm({ ...form, devPlId: e.target.value })}>
+                <option value="">선택 안 함</option>
+                {devPlUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="text-xs text-gray-500 mb-2 block">담당자</label>
             {allUsers.length === 0 ? (
@@ -760,7 +774,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     fetchProject()
     fetch('/api/users')
       .then((r) => r.json())
-      .then((data) => setAllUsers(data.map((u: any) => ({ id: u.id, name: u.name, avatarColor: u.avatarColor }))))
+      .then((data) => {
+        setAllUsers(data.map((u: any) => ({ id: u.id, name: u.name, avatarColor: u.avatarColor, position: u.position })))
+      })
       .catch(() => {})
   }, [id])
 
