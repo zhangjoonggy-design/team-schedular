@@ -6,7 +6,7 @@ import { ProgressBar } from '@/components/shared/ProgressBar'
 import { StatusBadge, SeverityBadge } from '@/components/shared/StatusBadge'
 import { UserAvatarGroup } from '@/components/shared/UserAvatar'
 import { formatDate, STATUS_LABELS, PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/utils'
-import { ChevronDown, ChevronRight, Plus, Trash2, AlertTriangle } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, Trash2, AlertTriangle, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const PHASE_COLORS: Record<string, string> = {
@@ -413,6 +413,7 @@ function EditTaskModal({
   onClose: () => void
   onSave: () => void
 }) {
+  const devPlUsers = allUsers.filter((u) => u.position === '개발 PL')
   const [form, setForm] = useState({
     title: task.title,
     status: task.status,
@@ -421,6 +422,7 @@ function EditTaskModal({
     dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
     estimatedHours: task.estimatedHours != null ? String(task.estimatedHours) : '',
     assigneeIds: task.assignees.map((a) => a.user.id),
+    devPlId: task.devPl?.id ?? '',
   })
   const [dateAlert, setDateAlert] = useState<string | null>(null)
 
@@ -538,6 +540,18 @@ function EditTaskModal({
                 onChange={(e) => { setDateAlert(null); setForm({ ...form, dueDate: e.target.value }) }} />
             </div>
           </div>
+          {!parentTask && devPlUsers.length > 0 && (
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">개발 PL</label>
+              <select className="w-full border rounded-lg px-3 py-2 text-sm"
+                value={form.devPlId} onChange={(e) => setForm({ ...form, devPlId: e.target.value })}>
+                <option value="">선택 안 함</option>
+                {devPlUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="text-xs text-gray-500 mb-2 block">담당자</label>
             {allUsers.length === 0 ? (
@@ -761,6 +775,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [editingTaskParent, setEditingTaskParent] = useState<Task | undefined>(undefined)
   const [addingSubtaskTo, setAddingSubtaskTo] = useState<string | undefined>()
   const [activeTab, setActiveTab] = useState<'tasks' | 'gantt' | 'issues'>('tasks')
+  const [showEditProject, setShowEditProject] = useState(false)
+  const [editProjectForm, setEditProjectForm] = useState({
+    name: '', description: '', color: '#6366f1', status: 'ACTIVE', startDate: '', endDate: '', bizPmId: '',
+  })
 
   const fetchProject = async () => {
     const res = await fetch(`/api/projects/${id}`, { cache: 'no-store' })
@@ -818,6 +836,24 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
                 <h1 className="text-xl font-bold text-gray-900">{project.name}</h1>
                 <StatusBadge status={project.status} />
+                <button
+                  onClick={() => {
+                    setEditProjectForm({
+                      name: project.name,
+                      description: project.description ?? '',
+                      color: project.color,
+                      status: project.status,
+                      startDate: project.startDate ? project.startDate.slice(0, 10) : '',
+                      endDate: project.endDate ? project.endDate.slice(0, 10) : '',
+                      bizPmId: project.bizPm?.id ?? '',
+                    })
+                    setShowEditProject(true)
+                  }}
+                  className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50"
+                  title="프로젝트 수정"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
               </div>
               {(() => {
                 const devPlNames = [...new Set(project.tasks.map(t => t.devPl?.name).filter(Boolean))]
@@ -1004,6 +1040,83 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             onClose={() => { setEditingTask(null); setEditingTaskParent(undefined) }}
             onSave={fetchProject}
           />
+        )}
+
+        {showEditProject && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl w-full max-w-md p-6">
+              <h3 className="font-semibold text-gray-800 mb-4">프로젝트 수정</h3>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  await fetch(`/api/projects/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editProjectForm),
+                  })
+                  setShowEditProject(false)
+                  fetchProject()
+                }}
+                className="space-y-3"
+              >
+                <input
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  placeholder="프로젝트명"
+                  value={editProjectForm.name}
+                  onChange={(e) => setEditProjectForm({ ...editProjectForm, name: e.target.value })}
+                  required
+                />
+                <textarea
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  placeholder="설명 (선택)"
+                  rows={2}
+                  value={editProjectForm.description}
+                  onChange={(e) => setEditProjectForm({ ...editProjectForm, description: e.target.value })}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500">시작일</label>
+                    <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
+                      value={editProjectForm.startDate}
+                      onChange={(e) => setEditProjectForm({ ...editProjectForm, startDate: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">종료일</label>
+                    <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
+                      value={editProjectForm.endDate}
+                      onChange={(e) => setEditProjectForm({ ...editProjectForm, endDate: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">현업 PM</label>
+                  <select className="w-full border rounded-lg px-3 py-2 text-sm"
+                    value={editProjectForm.bizPmId}
+                    onChange={(e) => setEditProjectForm({ ...editProjectForm, bizPmId: e.target.value })}>
+                    <option value="">선택 안 함</option>
+                    {allUsers.filter((u) => u.position === '현업 PM').map((u) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">상태</label>
+                  <select className="w-full border rounded-lg px-3 py-2 text-sm"
+                    value={editProjectForm.status}
+                    onChange={(e) => setEditProjectForm({ ...editProjectForm, status: e.target.value })}>
+                    {['ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'].map((s) => (
+                      <option key={s} value={s}>{s === 'ACTIVE' ? '진행중' : s === 'ON_HOLD' ? '보류' : s === 'COMPLETED' ? '완료' : '취소'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button type="button" onClick={() => setShowEditProject(false)}
+                    className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm">취소</button>
+                  <button type="submit"
+                    className="flex-1 bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-700">저장</button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </main>
     </div>

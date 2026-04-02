@@ -8,7 +8,7 @@ import { formatDate, STATUS_LABELS, VACATION_TYPE_LABELS } from '@/lib/utils'
 import Link from 'next/link'
 
 async function getDashboardData() {
-  const [projects, issues, vacations, tasks, members] = await Promise.all([
+  const [projects, issues, issueCount, riskCount, vacations, tasks, members] = await Promise.all([
     prisma.project.findMany({
       include: {
         tasks: {
@@ -30,6 +30,8 @@ async function getDashboardData() {
       orderBy: { createdAt: 'desc' },
       take: 5,
     }),
+    prisma.issue.count({ where: { status: { in: ['OPEN', 'IN_PROGRESS'] }, type: 'ISSUE' } }),
+    prisma.issue.count({ where: { status: { in: ['OPEN', 'IN_PROGRESS'] }, type: 'RISK' } }),
     prisma.vacationRequest.findMany({
       where: {
         status: 'APPROVED',
@@ -67,29 +69,32 @@ async function getDashboardData() {
     return { ...p, progress, memberCount: assigneeIds.size }
   })
 
-  return { projects: projectsWithProgress, issues, vacations, tasks, memberCount: members }
+  return { projects: projectsWithProgress, issues, issueCount, riskCount, vacations, tasks, memberCount: members }
 }
 
 export default async function DashboardPage() {
   const session = await auth()
-  const { projects, issues, vacations, tasks, memberCount } = await getDashboardData()
+  const { projects, issues, issueCount, riskCount, vacations, tasks, memberCount } = await getDashboardData()
 
   const activeProjects = projects.filter((p) => p.status === 'ACTIVE')
-  const openIssues = issues.length
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header title="대시보드" />
       <main className="flex-1 p-4 md:p-6 space-y-6">
         {/* 요약 카드 */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <div className="bg-white rounded-xl p-4 border border-gray-200">
             <p className="text-xs text-gray-500">진행중 프로젝트</p>
             <p className="text-2xl font-bold text-indigo-600 mt-1">{activeProjects.length}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-gray-200">
             <p className="text-xs text-gray-500">오픈 이슈</p>
-            <p className="text-2xl font-bold text-red-500 mt-1">{openIssues}</p>
+            <p className="text-2xl font-bold text-red-500 mt-1">{issueCount}</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <p className="text-xs text-gray-500">리스크</p>
+            <p className="text-2xl font-bold text-orange-500 mt-1">{riskCount}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-gray-200">
             <p className="text-xs text-gray-500">투입인력</p>

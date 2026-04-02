@@ -10,11 +10,13 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const projectId = searchParams.get('projectId')
   const status = searchParams.get('status')
+  const type = searchParams.get('type')
 
   const issues = await prisma.issue.findMany({
     where: {
       ...(projectId ? { projectId } : {}),
       ...(status ? { status } : {}),
+      ...(type ? { type } : {}),
     },
     include: {
       project: { select: { id: true, name: true, color: true } },
@@ -42,6 +44,7 @@ export async function POST(req: NextRequest) {
       assigneeId: body.assigneeId ?? null,
       title: body.title,
       description: body.description,
+      type: body.type ?? 'ISSUE',
       severity: body.severity ?? 'MEDIUM',
       status: 'OPEN',
     },

@@ -12,6 +12,7 @@ interface Issue {
   id: string
   title: string
   description: string | null
+  type: string
   severity: string
   status: string
   createdAt: string
@@ -28,6 +29,15 @@ const COLUMNS = [
   { id: 'CLOSED', label: '종료', color: 'bg-gray-50 border-gray-200' },
 ]
 
+const TYPE_BADGE: Record<string, string> = {
+  ISSUE: 'bg-red-100 text-red-700',
+  RISK: 'bg-orange-100 text-orange-700',
+}
+const TYPE_LABEL: Record<string, string> = {
+  ISSUE: '이슈',
+  RISK: '리스크',
+}
+
 export default function IssuesPage() {
   const [issues, setIssues] = useState<Issue[]>([])
   const [projects, setProjects] = useState<any[]>([])
@@ -35,6 +45,7 @@ export default function IssuesPage() {
   const [showForm, setShowForm] = useState(false)
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
   const [filter, setFilter] = useState({ projectId: '', severity: '' })
+  const [formType, setFormType] = useState<'ISSUE' | 'RISK'>('ISSUE')
   const [form, setForm] = useState({
     title: '', description: '', severity: 'MEDIUM', projectId: '', assigneeId: '',
   })
@@ -53,12 +64,17 @@ export default function IssuesPage() {
     fetch('/api/users').then((r) => r.json()).then(setUsers)
   }, [filter])
 
+  const openForm = (type: 'ISSUE' | 'RISK') => {
+    setFormType(type)
+    setShowForm(true)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     await fetch('/api/issues', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, type: formType }),
     })
     setShowForm(false)
     setForm({ title: '', description: '', severity: 'MEDIUM', projectId: '', assigneeId: '' })
@@ -75,7 +91,7 @@ export default function IssuesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('이슈를 삭제하시겠습니까?')) return
+    if (!confirm('삭제하시겠습니까?')) return
     await fetch(`/api/issues/${id}`, { method: 'DELETE' })
     setSelectedIssue(null)
     fetchIssues()
@@ -83,7 +99,7 @@ export default function IssuesPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header title="이슈 관리" />
+      <Header title="이슈/리스크 관리" />
       <main className="flex-1 p-4 md:p-6">
         {/* 필터 & 추가 */}
         <div className="flex flex-wrap gap-2 mb-4 items-center justify-between">
@@ -109,12 +125,20 @@ export default function IssuesPage() {
               ))}
             </select>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
-          >
-            <Plus className="w-4 h-4" /> 이슈 등록
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => openForm('ISSUE')}
+              className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600"
+            >
+              <Plus className="w-4 h-4" /> 이슈 등록
+            </button>
+            <button
+              onClick={() => openForm('RISK')}
+              className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600"
+            >
+              <Plus className="w-4 h-4" /> 리스크 등록
+            </button>
+          </div>
         </div>
 
         {/* 칸반 보드 */}
@@ -136,9 +160,14 @@ export default function IssuesPage() {
                       onClick={() => setSelectedIssue(issue)}
                       className="bg-white rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow border border-gray-100"
                     >
-                      <div className="flex items-start justify-between gap-1 mb-2">
+                      <div className="flex items-start justify-between gap-1 mb-1">
                         <p className="text-sm font-medium text-gray-800 leading-tight">{issue.title}</p>
                         <SeverityBadge severity={issue.severity} />
+                      </div>
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', TYPE_BADGE[issue.type] ?? 'bg-gray-100 text-gray-600')}>
+                          {TYPE_LABEL[issue.type] ?? issue.type}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: issue.project.color }} />
@@ -158,11 +187,13 @@ export default function IssuesPage() {
           })}
         </div>
 
-        {/* 이슈 등록 모달 */}
+        {/* 등록 모달 */}
         {showForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl w-full max-w-md p-6">
-              <h3 className="font-semibold text-gray-800 mb-4">이슈 등록</h3>
+              <h3 className="font-semibold text-gray-800 mb-4">
+                {formType === 'ISSUE' ? '이슈 등록' : '리스크 등록'}
+              </h3>
               <form onSubmit={handleSubmit} className="space-y-3">
                 <select
                   className="w-full border rounded-lg px-3 py-2 text-sm"
@@ -177,7 +208,7 @@ export default function IssuesPage() {
                 </select>
                 <input
                   className="w-full border rounded-lg px-3 py-2 text-sm"
-                  placeholder="이슈 제목"
+                  placeholder={formType === 'ISSUE' ? '이슈 제목' : '리스크 제목'}
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   required
@@ -214,19 +245,24 @@ export default function IssuesPage() {
                   <button type="button" onClick={() => setShowForm(false)}
                     className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm">취소</button>
                   <button type="submit"
-                    className="flex-1 bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-700">등록</button>
+                    className={cn('flex-1 text-white rounded-lg py-2 text-sm font-medium', formType === 'ISSUE' ? 'bg-red-500 hover:bg-red-600' : 'bg-orange-500 hover:bg-orange-600')}>등록</button>
                 </div>
               </form>
             </div>
           </div>
         )}
 
-        {/* 이슈 상세 모달 */}
+        {/* 상세 모달 */}
         {selectedIssue && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl w-full max-w-lg p-6">
               <div className="flex items-start justify-between mb-4">
-                <h3 className="font-semibold text-gray-800 text-lg">{selectedIssue.title}</h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold text-gray-800 text-lg">{selectedIssue.title}</h3>
+                  <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', TYPE_BADGE[selectedIssue.type] ?? 'bg-gray-100 text-gray-600')}>
+                    {TYPE_LABEL[selectedIssue.type] ?? selectedIssue.type}
+                  </span>
+                </div>
                 <button onClick={() => setSelectedIssue(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
               </div>
               <div className="space-y-3">
