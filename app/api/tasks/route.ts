@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
         })
       }
 
-      await logActivity({ action: 'CREATE', entity: 'SUBTASK', entityId: subTask.id, entityName: phase.name, userId: session.user!.id, userName: session.user!.name, detail: { 과제: task.title, 프로젝트: project?.name } })
+      await logActivity({ action: 'CREATE', entity: 'SUBTASK', entityId: subTask.id, entityName: phase.name, userId: session.user!.id, userName: session.user!.name, detail: { 과제: task.title, 프로젝트: project?.name, 시작일: new Date(cursor).toISOString().slice(0, 10), 마감일: phaseEnd.toISOString().slice(0, 10) } })
 
       cursor.setDate(cursor.getDate() + days)
     }
