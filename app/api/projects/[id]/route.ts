@@ -21,12 +21,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             subTasks: {
               include: {
                 subTasks: true,
-                assignees: { include: { user: { select: { id: true, name: true, avatarColor: true } } } },
+                assignees: { include: { user: { select: { id: true, name: true, avatarColor: true, position: true } } } },
                 issues: true,
               },
               orderBy: { createdAt: 'asc' },
             },
-            assignees: { include: { user: { select: { id: true, name: true, avatarColor: true } } } },
+            assignees: { include: { user: { select: { id: true, name: true, avatarColor: true, position: true } } } },
             devPl: { select: { id: true, name: true } },
             issues: true,
           },

@@ -28,7 +28,7 @@ interface Task {
   startDate: string | null
   dueDate: string | null
   estimatedHours: number | null
-  assignees: { user: { id: string; name: string; avatarColor: string } }[]
+  assignees: { user: { id: string; name: string; avatarColor: string; position: string } }[]
   subTasks: Task[]
   issues: any[]
   devPl: { id: string; name: string } | null
@@ -821,13 +821,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </div>
               {(() => {
                 const devPlNames = [...new Set(project.tasks.map(t => t.devPl?.name).filter(Boolean))]
+                const smDevNames = [...new Set(project.tasks.flatMap(t => t.assignees.map(a => a.user)).filter(u => u.position === 'SM개발').map(u => u.name))]
                 const hasBizPm = !!project.bizPm
                 const hasDevPl = devPlNames.length > 0
-                if (!hasBizPm && !hasDevPl) return null
+                const hasSmDev = smDevNames.length > 0
+                if (!hasBizPm && !hasDevPl && !hasSmDev) return null
                 return (
                   <p className="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-4">
                     {hasBizPm && <span><span className="text-gray-400">현업 PM :</span> {project.bizPm!.name}</span>}
                     {hasDevPl && <span><span className="text-gray-400">개발 PL :</span> {devPlNames.join(', ')}</span>}
+                    {hasSmDev && <span><span className="text-gray-400">SM개발 :</span> {smDevNames.join(', ')}</span>}
                   </p>
                 )
               })()}

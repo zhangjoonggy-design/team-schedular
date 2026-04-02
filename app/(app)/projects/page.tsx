@@ -21,7 +21,10 @@ interface Project {
   owner: { id: string; name: string; avatarColor: string }
   bizPm: { id: string; name: string } | null
   _count: { issues: number }
-  tasks: { devPl: { id: string; name: string } | null }[]
+  tasks: {
+    devPl: { id: string; name: string } | null
+    assignees: { user: { id: string; name: string; position: string } }[]
+  }[]
 }
 
 interface UserOption {
@@ -182,13 +185,16 @@ export default function ProjectsPage() {
                       </div>
                       {(() => {
                         const devPlNames = [...new Set(project.tasks.map(t => t.devPl?.name).filter(Boolean))]
+                        const smDevNames = [...new Set(project.tasks.flatMap(t => t.assignees.map(a => a.user)).filter(u => u.position === 'SM개발').map(u => u.name))]
                         const hasBizPm = !!project.bizPm
                         const hasDevPl = devPlNames.length > 0
-                        if (!hasBizPm && !hasDevPl) return null
+                        const hasSmDev = smDevNames.length > 0
+                        if (!hasBizPm && !hasDevPl && !hasSmDev) return null
                         return (
                           <p className="text-xs text-gray-500 mt-0.5 flex flex-wrap gap-x-3">
                             {hasBizPm && <span><span className="text-gray-400">현업 PM :</span> {project.bizPm!.name}</span>}
                             {hasDevPl && <span><span className="text-gray-400">개발 PL :</span> {devPlNames.join(', ')}</span>}
+                            {hasSmDev && <span><span className="text-gray-400">SM개발 :</span> {smDevNames.join(', ')}</span>}
                           </p>
                         )
                       })()}

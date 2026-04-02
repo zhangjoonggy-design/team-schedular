@@ -15,7 +15,7 @@ export async function GET() {
         where: { parentTaskId: null },
         include: {
           subTasks: true,
-          assignees: { include: { user: { select: { id: true, name: true, avatarColor: true } } } },
+          assignees: { include: { user: { select: { id: true, name: true, avatarColor: true, position: true } } } },
           devPl: { select: { id: true, name: true } },
         },
       },
