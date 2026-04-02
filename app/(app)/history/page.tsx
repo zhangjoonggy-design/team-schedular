@@ -20,6 +20,7 @@ const ENTITY_OPTIONS = [
   { value: '', label: '전체' },
   { value: 'PROJECT', label: '프로젝트' },
   { value: 'TASK', label: '과제' },
+  { value: 'SUBTASK', label: '상세과제' },
   { value: 'ISSUE', label: '이슈' },
   { value: 'VACATION', label: '휴가' },
   { value: 'USER', label: '팀원' },
@@ -40,6 +41,7 @@ const ACTION_COLORS: Record<string, string> = {
 const ENTITY_LABELS: Record<string, string> = {
   PROJECT: '프로젝트',
   TASK: '과제',
+  SUBTASK: '상세과제',
   ISSUE: '이슈',
   VACATION: '휴가',
   USER: '팀원',
@@ -48,6 +50,7 @@ const ENTITY_LABELS: Record<string, string> = {
 const ENTITY_COLORS: Record<string, string> = {
   PROJECT: 'bg-indigo-100 text-indigo-700',
   TASK: 'bg-purple-100 text-purple-700',
+  SUBTASK: 'bg-violet-100 text-violet-700',
   ISSUE: 'bg-orange-100 text-orange-700',
   VACATION: 'bg-teal-100 text-teal-700',
   USER: 'bg-gray-100 text-gray-700',

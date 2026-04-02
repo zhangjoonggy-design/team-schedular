@@ -76,6 +76,8 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  const project = await prisma.project.findUnique({ where: { id: body.projectId }, select: { name: true } })
+
   // 최상위 과제에 시작일·마감일이 있으면 단계별 일정을 하위 과제로 자동 생성
   if (!body.parentTaskId && body.startDate && body.dueDate) {
     const start = new Date(body.startDate)
@@ -112,12 +114,13 @@ export async function POST(req: NextRequest) {
         })
       }
 
+      await logActivity({ action: 'CREATE', entity: 'SUBTASK', entityId: subTask.id, entityName: phase.name, userId: session.user!.id, userName: session.user!.name, detail: { 과제: task.title, 프로젝트: project?.name } })
+
       cursor.setDate(cursor.getDate() + days)
     }
   }
 
-  const project = await prisma.project.findUnique({ where: { id: body.projectId }, select: { name: true } })
-  await logActivity({ action: 'CREATE', entity: 'TASK', entityId: task.id, entityName: task.title, userId: session.user!.id, userName: session.user!.name, detail: { project: project?.name } })
+  await logActivity({ action: 'CREATE', entity: 'TASK', entityId: task.id, entityName: task.title, userId: session.user!.id, userName: session.user!.name, detail: { 프로젝트: project?.name } })
 
   return NextResponse.json(task, { status: 201 })
 }

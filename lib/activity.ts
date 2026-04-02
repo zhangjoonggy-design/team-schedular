@@ -1,7 +1,7 @@
 import { prisma } from './prisma'
 
 export type ActivityAction = 'CREATE' | 'UPDATE' | 'DELETE'
-export type ActivityEntity = 'PROJECT' | 'TASK' | 'ISSUE' | 'VACATION' | 'USER'
+export type ActivityEntity = 'PROJECT' | 'TASK' | 'SUBTASK' | 'ISSUE' | 'VACATION' | 'USER'
 
 export async function logActivity({
   action,
