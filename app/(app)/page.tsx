@@ -139,10 +139,10 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* 이슈 */}
+          {/* 이슈/리스크 */}
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-800">이슈</h3>
+              <h3 className="font-semibold text-gray-800">이슈/리스크</h3>
               <Link href="/issues" className="text-xs text-indigo-600 hover:underline">전체 보기</Link>
             </div>
             <div className="space-y-3">
@@ -150,14 +150,19 @@ export default async function DashboardPage() {
                 <div key={issue.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
                   <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: issue.project.color }} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{issue.title}</p>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${(issue as any).type === 'RISK' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
+                        {(issue as any).type === 'RISK' ? '리스크' : '이슈'}
+                      </span>
+                      <p className="text-sm font-medium text-gray-800 truncate">{issue.title}</p>
+                    </div>
                     <p className="text-xs text-gray-500">{issue.project.name}</p>
                   </div>
                   <StatusBadge status={issue.status} />
                 </div>
               ))}
               {issues.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">이슈 없음</p>
+                <p className="text-sm text-gray-500 text-center py-4">이슈/리스크 없음</p>
               )}
             </div>
           </div>
