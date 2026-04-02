@@ -20,7 +20,8 @@ interface Project {
   memberCount: number
   owner: { id: string; name: string; avatarColor: string }
   bizPm: { id: string; name: string } | null
-  _count: { issues: number }
+  issueCount: number
+  riskCount: number
   tasks: {
     devPl: { id: string; name: string } | null
     assignees: { user: { id: string; name: string; position: string } }[]
@@ -214,12 +215,20 @@ export default function ProjectsPage() {
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>{project.tasks.length}개 과제</span>
-                    {project._count.issues > 0 && (
-                      <span className="flex items-center gap-1 text-red-500">
-                        <AlertTriangle className="w-3 h-3" />
-                        이슈 {project._count.issues}건
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {project.issueCount > 0 && (
+                        <span className="flex items-center gap-1 text-red-500">
+                          <AlertTriangle className="w-3 h-3" />
+                          이슈 {project.issueCount}건
+                        </span>
+                      )}
+                      {project.riskCount > 0 && (
+                        <span className="flex items-center gap-1 text-orange-500">
+                          <AlertTriangle className="w-3 h-3" />
+                          리스크 {project.riskCount}건
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {(project.startDate || project.endDate || project.memberCount > 0) && (
                     <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400 flex items-center justify-between gap-2">

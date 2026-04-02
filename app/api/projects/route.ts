@@ -22,7 +22,10 @@ export async function GET() {
       members: {
         include: { user: { select: { id: true, name: true, position: true } } },
       },
-      _count: { select: { issues: true } },
+      issues: {
+        where: { status: { in: ['OPEN', 'IN_PROGRESS'] } },
+        select: { type: true },
+      },
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -41,7 +44,9 @@ export async function GET() {
       }
     }
 
-    return { ...project, progress, memberCount: assigneeIds.size }
+    const issueCount = project.issues.filter((i: any) => i.type === 'ISSUE').length
+    const riskCount = project.issues.filter((i: any) => i.type === 'RISK').length
+    return { ...project, progress, memberCount: assigneeIds.size, issueCount, riskCount }
   })
 
   return NextResponse.json(projectsWithProgress)
