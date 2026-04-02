@@ -368,7 +368,6 @@ export default function VacationsPage() {
                           <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs">
                             {VACATION_TYPE_LABELS[v.type]}
                           </span>
-                          <StatusBadge status={v.status} />
                         </div>
                         <p className="text-sm text-gray-500 mt-0.5">
                           {formatDate(v.startDate)} ~ {formatDate(v.endDate)}
