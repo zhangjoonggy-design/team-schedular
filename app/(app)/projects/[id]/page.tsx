@@ -856,8 +856,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 </button>
               </div>
               {(() => {
-                const devPlNames = [...new Set(project.tasks.map(t => t.devPl?.name).filter(Boolean))]
-                const smDevNames = [...new Set(project.tasks.flatMap(t => t.assignees.map(a => a.user)).filter(u => u.position === 'SM개발').map(u => u.name))]
+                const devPlNames = [...new Set(project.members.filter(m => m.user.position === '개발 PL').map(m => m.user.name))]
+                const smDevNames = [...new Set(project.members.filter(m => m.user.position === 'SM개발').map(m => m.user.name))]
                 const hasBizPm = !!project.bizPm
                 const hasDevPl = devPlNames.length > 0
                 const hasSmDev = smDevNames.length > 0

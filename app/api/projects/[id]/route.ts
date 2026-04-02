@@ -46,7 +46,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const members = await prisma.projectMember.findMany({
       where: { projectId: id },
-      include: { user: { select: { id: true, name: true, avatarColor: true } } },
+      include: { user: { select: { id: true, name: true, avatarColor: true, position: true } } },
     })
 
     return NextResponse.json({ ...project, members })

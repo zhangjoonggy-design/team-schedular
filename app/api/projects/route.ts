@@ -19,6 +19,9 @@ export async function GET() {
           devPl: { select: { id: true, name: true } },
         },
       },
+      members: {
+        include: { user: { select: { id: true, name: true, position: true } } },
+      },
       _count: { select: { issues: true } },
     },
     orderBy: { createdAt: 'desc' },

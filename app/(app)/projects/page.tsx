@@ -25,6 +25,7 @@ interface Project {
     devPl: { id: string; name: string } | null
     assignees: { user: { id: string; name: string; position: string } }[]
   }[]
+  members: { user: { id: string; name: string; position: string } }[]
 }
 
 interface UserOption {
@@ -184,8 +185,8 @@ export default function ProjectsPage() {
                         <h3 className="font-semibold text-gray-800 leading-tight truncate">{project.name}</h3>
                       </div>
                       {(() => {
-                        const devPlNames = [...new Set(project.tasks.map(t => t.devPl?.name).filter(Boolean))]
-                        const smDevNames = [...new Set(project.tasks.flatMap(t => t.assignees.map(a => a.user)).filter(u => u.position === 'SM개발').map(u => u.name))]
+                        const devPlNames = [...new Set(project.members.filter(m => m.user.position === '개발 PL').map(m => m.user.name))]
+                        const smDevNames = [...new Set(project.members.filter(m => m.user.position === 'SM개발').map(m => m.user.name))]
                         const hasBizPm = !!project.bizPm
                         const hasDevPl = devPlNames.length > 0
                         const hasSmDev = smDevNames.length > 0
