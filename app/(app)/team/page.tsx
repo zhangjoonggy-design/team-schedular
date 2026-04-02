@@ -204,7 +204,19 @@ function UserFormModal({
   }
 
   const toggleTask = (taskId: string) => {
-    setForm({ ...form, taskIds: form.taskIds.includes(taskId) ? form.taskIds.filter(id => id !== taskId) : [...form.taskIds, taskId] })
+    // 클릭한 과제가 부모 과제(parentTaskId === null)인 경우 하위과제도 함께 선택/해제
+    const ownerProject = projects.find(p => p.tasks.some(t => t.id === taskId))
+    const clickedTask = ownerProject?.tasks.find(t => t.id === taskId)
+    const subTaskIds = clickedTask?.parentTaskId === null
+      ? (ownerProject?.tasks.filter(t => t.parentTaskId === taskId).map(t => t.id) ?? [])
+      : []
+    const allIds = [taskId, ...subTaskIds]
+
+    if (form.taskIds.includes(taskId)) {
+      setForm({ ...form, taskIds: form.taskIds.filter(id => !allIds.includes(id)) })
+    } else {
+      setForm({ ...form, taskIds: [...new Set([...form.taskIds, ...allIds])] })
+    }
   }
 
   const toggleExpand = (projectId: string) => {
