@@ -11,7 +11,9 @@ export async function GET() {
   const users = await prisma.user.findMany({
     select: {
       id: true, name: true, email: true, role: true, position: true, avatarColor: true, createdAt: true,
-      projectMembers: { select: { projectId: true } },
+      projectMembers: {
+        include: { project: { select: { id: true, name: true, color: true } } },
+      },
       taskAssignments: {
         where: { task: { status: { notIn: ['DONE'] } } },
         select: {

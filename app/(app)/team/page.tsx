@@ -38,7 +38,7 @@ interface User {
   position: string
   avatarColor: string
   createdAt: string
-  projectMembers?: { projectId: string }[]
+  projectMembers?: { projectId: string; project: { id: string; name: string; color: string } }[]
   taskAssignments?: {
     task: {
       id: string
@@ -470,11 +470,14 @@ export default function TeamPage() {
                     <div className="ml-auto flex items-center gap-4 pr-5">
                       {/* 최종 마감일 */}
                       {(() => {
+                        const hasProjects = (user.projectMembers ?? []).length > 0
                         if (activeTasks.length === 0) {
                           return (
                             <div className="text-right">
-                              <p className="text-sm font-medium text-gray-400">미투입</p>
-                              <p className="text-xs text-gray-400">최종 투입일</p>
+                              <p className={`text-sm font-medium ${hasProjects ? 'text-indigo-500' : 'text-gray-400'}`}>
+                                {hasProjects ? '투입' : '미투입'}
+                              </p>
+                              <p className="text-xs text-gray-400">투입 상태</p>
                             </div>
                           )
                         }
@@ -506,7 +509,21 @@ export default function TeamPage() {
                       </div>
                     </div>
                   </div>
-                  {activeTasks.length > 0 && (() => {
+                  {/* 현업PM · SM개발: 프로젝트 목록 표시 */}
+                  {['현업 PM', 'SM개발'].includes(user.position) && (user.projectMembers ?? []).length > 0 && (
+                    <div className="mt-3 space-y-1.5">
+                      <p className="text-xs text-gray-400 font-medium">투입 프로젝트</p>
+                      {(user.projectMembers ?? []).map((pm) => (
+                        <div key={pm.projectId} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-100 bg-gray-50">
+                          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: pm.project.color }} />
+                          <span className="text-xs font-medium text-gray-700">{pm.project.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 일반 역할: 과제 목록 표시 */}
+                  {!['현업 PM', 'SM개발'].includes(user.position) && activeTasks.length > 0 && (() => {
                     const isExpanded = expandedTaskUsers.has(user.id)
 
                     // 프로젝트 → 과제 → 상세과제 계층 구조 빌드
