@@ -199,8 +199,18 @@ export default function HistoryPage() {
                         <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                           {log.userName ?? '-'}
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-400 hidden md:table-cell max-w-[240px]">
-                          {detail ? Object.entries(detail).map(([k, v]) => `${k}: ${v}`).join(' · ') : '-'}
+                        <td className="px-4 py-3 text-xs text-gray-400 hidden md:table-cell max-w-[300px]">
+                          {detail ? (
+                            <div className="flex flex-col gap-0.5">
+                              {Object.entries(detail).map(([k, v]) => (
+                                <span key={k}>
+                                  <span className="text-gray-500 font-medium">{k}</span>
+                                  <span className="mx-1 text-gray-300">·</span>
+                                  <span>{String(v)}</span>
+                                </span>
+                              ))}
+                            </div>
+                          ) : '-'}
                         </td>
                       </tr>
                     )
