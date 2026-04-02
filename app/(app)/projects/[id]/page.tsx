@@ -31,12 +31,14 @@ interface Task {
   assignees: { user: { id: string; name: string; avatarColor: string } }[]
   subTasks: Task[]
   issues: any[]
+  devPl: { id: string; name: string } | null
 }
 
 interface Member {
   id: string
   name: string
   avatarColor: string
+  position?: string
 }
 
 interface Project {
@@ -48,6 +50,7 @@ interface Project {
   startDate: string | null
   endDate: string | null
   owner: { id: string; name: string; avatarColor: string }
+  bizPm: { id: string; name: string } | null
   members: { user: Member }[]
   tasks: Task[]
   issues: any[]
@@ -811,11 +814,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: project.color }} />
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
                 <h1 className="text-xl font-bold text-gray-900">{project.name}</h1>
                 <StatusBadge status={project.status} />
               </div>
+              {(() => {
+                const devPlNames = [...new Set(project.tasks.map(t => t.devPl?.name).filter(Boolean))]
+                const hasBizPm = !!project.bizPm
+                const hasDevPl = devPlNames.length > 0
+                if (!hasBizPm && !hasDevPl) return null
+                return (
+                  <p className="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-4">
+                    {hasBizPm && <span><span className="text-gray-400">현업 PM :</span> {project.bizPm!.name}</span>}
+                    {hasDevPl && <span><span className="text-gray-400">개발 PL :</span> {devPlNames.join(', ')}</span>}
+                  </p>
+                )
+              })()}
               {project.description && (
                 <p className="text-sm text-gray-500 mt-1">{project.description}</p>
               )}

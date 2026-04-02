@@ -175,21 +175,22 @@ export default function ProjectsPage() {
                   className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow block"
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
-                      <h3 className="font-semibold text-gray-800 leading-tight truncate">{project.name}</h3>
-                      {project.bizPm && (
-                        <span className="text-xs bg-blue-50 text-blue-600 rounded-full px-2 py-0.5 font-medium flex-shrink-0">
-                          현업PM {project.bizPm.name}
-                        </span>
-                      )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
+                        <h3 className="font-semibold text-gray-800 leading-tight truncate">{project.name}</h3>
+                      </div>
                       {(() => {
                         const devPlNames = [...new Set(project.tasks.map(t => t.devPl?.name).filter(Boolean))]
-                        return devPlNames.length > 0 ? (
-                          <span className="text-xs bg-violet-50 text-violet-600 rounded-full px-2 py-0.5 font-medium flex-shrink-0">
-                            개발PL {devPlNames.join(', ')}
-                          </span>
-                        ) : null
+                        const hasBizPm = !!project.bizPm
+                        const hasDevPl = devPlNames.length > 0
+                        if (!hasBizPm && !hasDevPl) return null
+                        return (
+                          <p className="text-xs text-gray-500 mt-0.5 flex flex-wrap gap-x-3">
+                            {hasBizPm && <span><span className="text-gray-400">현업 PM :</span> {project.bizPm!.name}</span>}
+                            {hasDevPl && <span><span className="text-gray-400">개발 PL :</span> {devPlNames.join(', ')}</span>}
+                          </p>
+                        )
                       })()}
                     </div>
                     <StatusBadge status={project.status} />
