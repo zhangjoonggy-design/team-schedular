@@ -13,7 +13,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   // 변경 전 값 조회 (로그 상세 기록용)
   const before = await prisma.task.findUnique({
     where: { id },
-    select: { title: true, status: true, progressPercent: true, priority: true, startDate: true, dueDate: true, parentTaskId: true },
+    select: {
+      title: true, status: true, progressPercent: true, priority: true,
+      startDate: true, dueDate: true, parentTaskId: true,
+      assignees: { select: { user: { select: { id: true, name: true } } } },
+    },
   })
 
   // 요청에 명시된 필드만 업데이트 (미포함 필드는 기존 값 유지)
@@ -86,6 +90,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const bDate = before.startDate ? before.startDate.toISOString().slice(0, 10) : '-'
       const aDate = body.startDate ? new Date(body.startDate).toISOString().slice(0, 10) : '-'
       if (bDate !== aDate) changes['시작일'] = `${bDate} → ${aDate}`
+    }
+    if (body.assigneeIds !== undefined) {
+      const beforeIds = new Set(before.assignees.map((a: { user: { id: string } }) => a.user.id))
+      const afterIds = new Set(body.assigneeIds as string[])
+      const added = body.assigneeIds.filter((uid: string) => !beforeIds.has(uid))
+      const removed = before.assignees.filter((a: { user: { id: string; name: string } }) => !afterIds.has(a.user.id)).map((a: { user: { name: string } }) => a.user.name)
+      if (added.length > 0 || removed.length > 0) {
+        const newNames = added.length > 0
+          ? (await prisma.user.findMany({ where: { id: { in: added } }, select: { name: true } })).map((u: { name: string }) => u.name)
+          : []
+        if (removed.length > 0) changes['투입팀원 제외'] = removed.join(', ')
+        if (newNames.length > 0) changes['투입팀원 추가'] = newNames.join(', ')
+      }
     }
   }
 
