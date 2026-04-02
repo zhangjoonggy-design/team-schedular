@@ -74,7 +74,7 @@ export const VACATION_TYPE_LABELS: Record<string, string> = {
   HALF_PM: '오후반차',
   QUARTER_DAY: '반반차',
   HALF_DAY: '대체휴가',
-  SICK: '병가',
+  SICK: '인병휴가',
   REMOTE: '재택근무',
   PETITION: '청원휴가',
   PUBLIC_DUTY: '공가',

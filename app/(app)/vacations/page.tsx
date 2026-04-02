@@ -48,7 +48,7 @@ const FORM_TYPE_OPTIONS = [
   { value: 'HALF',         label: '반차' },
   { value: 'QUARTER_DAY',  label: '반반차' },
   { value: 'HALF_DAY',    label: '대체휴가' },
-  { value: 'SICK',         label: '병가' },
+  { value: 'SICK',         label: '인병휴가' },
   { value: 'REMOTE',       label: '재택근무' },
   { value: 'PETITION',     label: '청원휴가' },
   { value: 'PUBLIC_DUTY',  label: '공가' },
@@ -431,6 +431,23 @@ export default function VacationsPage() {
                   </select>
                 </div>
 
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500">날짜{['HALF', 'HALF_DAY', 'QUARTER_DAY'].includes(form.type) ? '' : ' (시작)'}</label>
+                    <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
+                      value={form.startDate}
+                      onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
+                  </div>
+                  {!['HALF', 'HALF_DAY', 'QUARTER_DAY'].includes(form.type) && (
+                    <div>
+                      <label className="text-xs text-gray-500">종료일</label>
+                      <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
+                        value={form.endDate}
+                        onChange={(e) => setForm({ ...form, endDate: e.target.value })} required />
+                    </div>
+                  )}
+                </div>
+
                 {/* 반차 — 오전/오후 선택 */}
                 {form.type === 'HALF' && (
                   <div className="grid grid-cols-2 gap-2">
@@ -454,23 +471,6 @@ export default function VacationsPage() {
                     })}
                   </div>
                 )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-gray-500">날짜{['HALF', 'HALF_DAY', 'QUARTER_DAY'].includes(form.type) ? '' : ' (시작)'}</label>
-                    <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                      value={form.startDate}
-                      onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
-                  </div>
-                  {!['HALF', 'HALF_DAY', 'QUARTER_DAY'].includes(form.type) && (
-                    <div>
-                      <label className="text-xs text-gray-500">종료일</label>
-                      <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
-                        value={form.endDate}
-                        onChange={(e) => setForm({ ...form, endDate: e.target.value })} required />
-                    </div>
-                  )}
-                </div>
 
                 {/* 대체휴가 — 자유 시간 선택 */}
                 {form.type === 'HALF_DAY' && (
