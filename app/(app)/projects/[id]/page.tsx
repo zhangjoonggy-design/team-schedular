@@ -861,7 +861,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 const bizPmNames = [...new Set([...(project.bizPm ? [project.bizPm.name] : []), ...bizPmNamesFromMembers])]
                 const smDevNames = [...new Set(project.members.filter(m => m.user.position === 'SM운영직원').map(m => m.user.name))]
                 const devPlNames = [...new Set(project.members.filter(m => m.user.position === '개발 PL').map(m => m.user.name))]
-                const activeCount = project.members.filter(m => !EXCLUDE.includes(m.user.position)).length
+                const activeCount = project.members.filter(m => !EXCLUDE.includes(m.user.position ?? '')).length
                 const bizPmLabel = bizPmNames.length > 0 ? bizPmNames.join(', ') : '미지정'
                 const smDevLabel = smDevNames.length > 0 ? smDevNames.join(', ') : '미지정'
                 const devPlLabel = devPlNames.length > 0 ? devPlNames.join(', ') : '미지정'
