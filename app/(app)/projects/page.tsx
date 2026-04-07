@@ -186,14 +186,16 @@ export default function ProjectsPage() {
                         <h3 className="font-semibold text-gray-800 leading-tight truncate">{project.name}</h3>
                       </div>
                       {(() => {
-                        const bizPmName = project.bizPm?.name ?? '미지정'
+                        const bizPmNamesFromMembers = project.members.filter(m => m.user.position === '현업 PM').map(m => m.user.name)
+                        const bizPmNames = [...new Set([...(project.bizPm ? [project.bizPm.name] : []), ...bizPmNamesFromMembers])]
                         const smDevNames = [...new Set(project.members.filter(m => m.user.position === 'SM개발').map(m => m.user.name))]
                         const devPlNames = [...new Set(project.members.filter(m => m.user.position === '개발 PL').map(m => m.user.name))]
+                        const bizPmLabel = bizPmNames.length > 0 ? bizPmNames.join(', ') : '미지정'
                         const smDevLabel = smDevNames.length > 0 ? smDevNames.join(', ') : '미지정'
                         const devPlLabel = devPlNames.length > 0 ? devPlNames.join(', ') : '미지정'
                         return (
                           <p className="text-xs text-gray-500 mt-0.5 flex flex-wrap gap-x-3">
-                            <span><span className="text-gray-400">현업 PM :</span> {bizPmName}</span>
+                            <span><span className="text-gray-400">현업 PM :</span> {bizPmLabel}</span>
                             <span><span className="text-gray-400">SM개발 :</span> {smDevLabel}</span>
                             <span><span className="text-gray-400">개발 PL :</span> {devPlLabel}</span>
                           </p>
