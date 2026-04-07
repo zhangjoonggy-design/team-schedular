@@ -98,6 +98,7 @@ function ProjectTaskSelector({
   onToggleProject,
   onToggleTask,
   onToggleExpand,
+  projectOnly = false,
 }: {
   projects: Project[]
   projectIds: string[]
@@ -106,6 +107,7 @@ function ProjectTaskSelector({
   onToggleProject: (id: string) => void
   onToggleTask: (id: string) => void
   onToggleExpand: (id: string) => void
+  projectOnly?: boolean
 }) {
   if (projects.length === 0) return <p className="text-xs text-gray-400">등록된 프로젝트가 없습니다.</p>
 
@@ -129,13 +131,13 @@ function ProjectTaskSelector({
                 <label htmlFor={`proj-${project.id}`} className="flex-1 text-sm font-medium text-gray-700 cursor-pointer">
                   {project.name}
                 </label>
-                {project.tasks.length > 0 && (
+                {!projectOnly && project.tasks.length > 0 && (
                   <button type="button" onClick={() => onToggleExpand(project.id)} className="p-0.5 text-gray-400 hover:text-gray-600">
                     {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </button>
                 )}
               </div>
-              {isSelected && isExpanded && project.tasks.length > 0 && (
+              {!projectOnly && isSelected && isExpanded && project.tasks.length > 0 && (
                 <div className="bg-gray-50 border-t border-gray-100">
                   {project.tasks.map((task) => (
                     <div key={task.id} className={cn(
@@ -161,9 +163,12 @@ function ProjectTaskSelector({
           )
         })}
       </div>
-      {(projectIds.length > 0 || taskIds.length > 0) && (
-        <p className="text-xs text-indigo-600 mt-1">프로젝트 {projectIds.length}개, 과제 {taskIds.length}개 선택됨</p>
-      )}
+      {projectOnly
+        ? projectIds.length > 0 && <p className="text-xs text-indigo-600 mt-1">프로젝트 {projectIds.length}개 선택됨</p>
+        : (projectIds.length > 0 || taskIds.length > 0) && (
+          <p className="text-xs text-indigo-600 mt-1">프로젝트 {projectIds.length}개, 과제 {taskIds.length}개 선택됨</p>
+        )
+      }
     </>
   )
 }
@@ -192,6 +197,8 @@ function UserFormModal({
   onClose: () => void
   isEdit: boolean
 }) {
+  const isProjectOnly = ['현업 PM', 'SM개발'].includes(form.position)
+
   const toggleProject = (projectId: string) => {
     const selected = form.projectIds.includes(projectId)
     if (selected) {
@@ -199,7 +206,9 @@ function UserFormModal({
       setForm({ ...form, projectIds: form.projectIds.filter(id => id !== projectId), taskIds: form.taskIds.filter(id => !projectTaskIds.includes(id)) })
     } else {
       setForm({ ...form, projectIds: [...form.projectIds, projectId] })
-      setExpandedProjects(new Set([...expandedProjects, projectId]))
+      if (!isProjectOnly) {
+        setExpandedProjects(new Set([...expandedProjects, projectId]))
+      }
     }
   }
 
@@ -250,21 +259,29 @@ function UserFormModal({
               required={!isEdit} minLength={form.password ? 6 : undefined} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">권한</label>
-            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
-              <option value="MEMBER">팀원</option>
-              <option value="ADMIN">관리자</option>
-            </select>
-          </div>
-          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">역할</label>
             <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={form.position} onChange={e => setForm({ ...form, position: e.target.value })}>
+              value={form.position}
+              onChange={e => {
+                const pos = e.target.value
+                const autoAdmin = ['현업 PM', 'SM개발'].includes(pos)
+                setForm({ ...form, position: pos, role: autoAdmin ? 'ADMIN' : form.role, taskIds: autoAdmin ? [] : form.taskIds })
+              }}>
               {POSITION_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">권한</label>
+            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+              value={form.role}
+              disabled={isProjectOnly}
+              onChange={e => setForm({ ...form, role: e.target.value })}>
+              <option value="MEMBER">팀원</option>
+              <option value="ADMIN">관리자</option>
+            </select>
+            {isProjectOnly && <p className="text-xs text-gray-400 mt-1">현업 PM / SM개발은 관리자 권한으로 고정됩니다.</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">아바타 색상</label>
@@ -283,7 +300,7 @@ function UserFormModal({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              프로젝트 및 과제 배정
+              {isProjectOnly ? '프로젝트 배정' : '프로젝트 및 과제 배정'}
               <span className="ml-1 text-xs text-gray-400 font-normal">(선택사항)</span>
             </label>
             <ProjectTaskSelector
@@ -294,6 +311,7 @@ function UserFormModal({
               onToggleProject={toggleProject}
               onToggleTask={toggleTask}
               onToggleExpand={toggleExpand}
+              projectOnly={isProjectOnly}
             />
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
