@@ -16,7 +16,7 @@ const POSITION_OPTIONS = [
   { value: '디자이너',  label: '디자이너' },
   { value: '퍼블',      label: '퍼블' },
   { value: '기획',      label: '기획' },
-  { value: 'SM개발',    label: 'SM개발' },
+  { value: 'SM운영직원',    label: 'SM운영직원' },
 ]
 
 const POSITION_COLORS: Record<string, string> = {
@@ -27,7 +27,7 @@ const POSITION_COLORS: Record<string, string> = {
   '디자이너':  'bg-pink-100 text-pink-700',
   '퍼블':      'bg-orange-100 text-orange-700',
   '기획':      'bg-amber-100 text-amber-700',
-  'SM개발':    'bg-teal-100 text-teal-700',
+  'SM운영직원':    'bg-teal-100 text-teal-700',
 }
 
 interface User {
@@ -197,7 +197,7 @@ function UserFormModal({
   onClose: () => void
   isEdit: boolean
 }) {
-  const isProjectOnly = ['현업 PM', 'SM개발'].includes(form.position)
+  const isProjectOnly = ['현업 PM', 'SM운영직원'].includes(form.position)
 
   const toggleProject = (projectId: string) => {
     const selected = form.projectIds.includes(projectId)
@@ -264,7 +264,7 @@ function UserFormModal({
               value={form.position}
               onChange={e => {
                 const pos = e.target.value
-                const autoAdmin = ['현업 PM', 'SM개발'].includes(pos)
+                const autoAdmin = ['현업 PM', 'SM운영직원'].includes(pos)
                 setForm({ ...form, position: pos, role: autoAdmin ? 'ADMIN' : form.role, taskIds: autoAdmin ? [] : form.taskIds })
               }}>
               {POSITION_OPTIONS.map(opt => (
@@ -281,7 +281,7 @@ function UserFormModal({
               <option value="MEMBER">팀원</option>
               <option value="ADMIN">관리자</option>
             </select>
-            {isProjectOnly && <p className="text-xs text-gray-400 mt-1">현업 PM / SM개발은 관리자 권한으로 고정됩니다.</p>}
+            {isProjectOnly && <p className="text-xs text-gray-400 mt-1">현업 PM / SM운영직원은 관리자 권한으로 고정됩니다.</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">아바타 색상</label>
@@ -545,8 +545,8 @@ export default function TeamPage() {
                       </div>
                     </div>
                   </div>
-                  {/* 현업PM · SM개발: 프로젝트 목록 표시 */}
-                  {['현업 PM', 'SM개발'].includes(user.position) && (user.projectMembers ?? []).length > 0 && (
+                  {/* 현업PM · SM운영직원: 프로젝트 목록 표시 */}
+                  {['현업 PM', 'SM운영직원'].includes(user.position) && (user.projectMembers ?? []).length > 0 && (
                     <div className="mt-3 space-y-1.5">
                       <p className="text-xs text-gray-400 font-medium">투입 프로젝트</p>
                       {(user.projectMembers ?? []).map((pm) => (
@@ -559,7 +559,7 @@ export default function TeamPage() {
                   )}
 
                   {/* 일반 역할: 과제 목록 표시 */}
-                  {!['현업 PM', 'SM개발'].includes(user.position) && activeTasks.length > 0 && (() => {
+                  {!['현업 PM', 'SM운영직원'].includes(user.position) && activeTasks.length > 0 && (() => {
                     const isExpanded = expandedTaskUsers.has(user.id)
 
                     // 프로젝트 → 과제 → 상세과제 계층 구조 빌드

@@ -54,10 +54,10 @@ async function getDashboardData() {
       orderBy: { dueDate: 'asc' },
       take: 5,
     }),
-    // 투입인력: 진행 중 과제가 있는 팀원 수 (현업 PM · SM개발 제외)
+    // 투입인력: 진행 중 과제가 있는 팀원 수 (현업 PM · SM운영직원 제외)
     prisma.user.count({
       where: {
-        position: { notIn: ['현업 PM', 'SM개발'] },
+        position: { notIn: ['현업 PM', 'SM운영직원'] },
         taskAssignments: { some: { task: { status: { notIn: ['DONE'] } } } },
       },
     }),

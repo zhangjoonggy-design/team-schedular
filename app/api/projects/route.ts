@@ -36,8 +36,8 @@ export async function GET() {
       ? Math.round(project.tasks.reduce((sum, t) => sum + t.progressPercent, 0) / project.tasks.length)
       : 0
 
-    // 투입 인력 수 = 과제 담당자 중 고유 사용자 수 (현업 PM · SM개발 제외)
-    const EXCLUDE_POSITIONS = ['현업 PM', 'SM개발']
+    // 투입 인력 수 = 과제 담당자 중 고유 사용자 수 (현업 PM · SM운영직원 제외)
+    const EXCLUDE_POSITIONS = ['현업 PM', 'SM운영직원']
     const assigneeIds = new Set<string>()
     for (const task of project.tasks) {
       for (const a of task.assignees) {
