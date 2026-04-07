@@ -856,17 +856,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 </button>
               </div>
               {(() => {
-                const devPlNames = [...new Set(project.members.filter(m => m.user.position === '개발 PL').map(m => m.user.name))]
+                const bizPmName = project.bizPm?.name ?? '미지정'
                 const smDevNames = [...new Set(project.members.filter(m => m.user.position === 'SM개발').map(m => m.user.name))]
-                const hasBizPm = !!project.bizPm
-                const hasDevPl = devPlNames.length > 0
-                const hasSmDev = smDevNames.length > 0
-                if (!hasBizPm && !hasDevPl && !hasSmDev) return null
+                const devPlNames = [...new Set(project.members.filter(m => m.user.position === '개발 PL').map(m => m.user.name))]
+                const smDevLabel = smDevNames.length > 0 ? smDevNames.join(', ') : '미지정'
+                const devPlLabel = devPlNames.length > 0 ? devPlNames.join(', ') : '미지정'
                 return (
                   <p className="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-4">
-                    {hasBizPm && <span><span className="text-gray-400">현업 PM :</span> {project.bizPm!.name}</span>}
-                    {hasDevPl && <span><span className="text-gray-400">개발 PL :</span> {devPlNames.join(', ')}</span>}
-                    {hasSmDev && <span><span className="text-gray-400">SM개발 :</span> {smDevNames.join(', ')}</span>}
+                    <span><span className="text-gray-400">현업 PM :</span> {bizPmName}</span>
+                    <span><span className="text-gray-400">SM개발 :</span> {smDevLabel}</span>
+                    <span><span className="text-gray-400">개발 PL :</span> {devPlLabel}</span>
                   </p>
                 )
               })()}
