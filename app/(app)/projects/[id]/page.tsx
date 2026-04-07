@@ -8,6 +8,7 @@ import { UserAvatarGroup } from '@/components/shared/UserAvatar'
 import { formatDate, STATUS_LABELS, PRIORITY_LABELS, PRIORITY_COLORS } from '@/lib/utils'
 import { ChevronDown, ChevronRight, Plus, Trash2, AlertTriangle, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { PdfButton } from '@/components/shared/PdfButton'
 
 const PHASE_COLORS: Record<string, string> = {
   '분석':   '#3b82f6',
@@ -63,6 +64,7 @@ function TaskRow({
   onAddSubtask,
   onDelete,
   onEdit,
+  forceExpand = false,
 }: {
   task: Task
   level?: number
@@ -70,8 +72,13 @@ function TaskRow({
   onAddSubtask: (parentId: string) => void
   onDelete: (id: string) => void
   onEdit: (task: Task, parent?: Task) => void
+  forceExpand?: boolean
 }) {
   const [expanded, setExpanded] = useState(true)
+
+  useEffect(() => {
+    if (forceExpand) setExpanded(true)
+  }, [forceExpand])
   const [editingProgress, setEditingProgress] = useState(false)
   const [progress, setProgress] = useState(task.progressPercent)
 
@@ -186,6 +193,7 @@ function TaskRow({
           onAddSubtask={onAddSubtask}
           onDelete={onDelete}
           onEdit={(editTask) => onEdit(editTask, task)}
+          forceExpand={forceExpand}
         />
       ))}
     </>
@@ -779,6 +787,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [editProjectForm, setEditProjectForm] = useState({
     name: '', description: '', color: '#6366f1', status: 'ACTIVE', startDate: '', endDate: '', bizPmId: '',
   })
+  const [forceExpand, setForceExpand] = useState(false)
 
   const fetchProject = async () => {
     const res = await fetch(`/api/projects/${id}`, { cache: 'no-store' })
@@ -827,7 +836,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="flex flex-col min-h-screen">
       <Header title={project.name} />
-      <main className="flex-1 p-4 md:p-6 space-y-4">
+      <main id="project-detail-content" className="flex-1 p-4 md:p-6 space-y-4">
         {/* 프로젝트 헤더 */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
@@ -878,8 +887,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <p className="text-sm text-gray-500 mt-1">{project.description}</p>
               )}
             </div>
-            <div className="text-sm text-gray-500">
-              {formatDate(project.startDate)} ~ {formatDate(project.endDate)}
+            <div className="flex flex-col items-end gap-2">
+              <PdfButton
+                filename={project.name}
+                contentId="project-detail-content"
+                onBeforeExport={() => setForceExpand(true)}
+              />
+              <div className="text-sm text-gray-500">
+                {formatDate(project.startDate)} ~ {formatDate(project.endDate)}
+              </div>
             </div>
           </div>
           <div>
@@ -967,6 +983,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       onAddSubtask={(parentId) => { setAddingSubtaskTo(parentId); setShowAddTask(true) }}
                       onDelete={handleDeleteTask}
                       onEdit={(task, parent) => { setEditingTask(task); setEditingTaskParent(parent) }}
+                      forceExpand={forceExpand}
                     />
                   ))}
                 </tbody>

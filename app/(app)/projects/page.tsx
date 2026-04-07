@@ -7,6 +7,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
 import { Plus, AlertTriangle, Trash2 } from 'lucide-react'
+import { PdfButton } from '@/components/shared/PdfButton'
 
 interface Project {
   id: string
@@ -92,15 +93,18 @@ export default function ProjectsPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header title="프로젝트" />
-      <main className="flex-1 p-4 md:p-6">
+      <main id="projects-content" className="flex-1 p-4 md:p-6">
         <div className="flex justify-between items-center mb-6">
           <p className="text-sm text-gray-500">총 {projects.length}개 프로젝트</p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
-          >
-            <Plus className="w-4 h-4" /> 프로젝트 추가
-          </button>
+          <div className="flex items-center gap-2">
+            <PdfButton filename="프로젝트목록" contentId="projects-content" />
+            <button
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
+            >
+              <Plus className="w-4 h-4" /> 프로젝트 추가
+            </button>
+          </div>
         </div>
 
         {showForm && (

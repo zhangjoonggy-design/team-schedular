@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { formatDate } from '@/lib/utils'
 import { Plus, ChevronDown, ChevronRight, Pencil } from 'lucide-react'
+import { PdfButton } from '@/components/shared/PdfButton'
 import { cn } from '@/lib/utils'
 
 const POSITION_OPTIONS = [
@@ -444,13 +445,22 @@ export default function TeamPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header title="팀원" />
-      <main className="flex-1 p-4 md:p-6 space-y-4">
+      <main id="team-content" className="flex-1 p-4 md:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500">총 {users.length}명의 팀원 <span className="text-gray-400 text-xs ml-1">· 카드를 더블클릭하면 수정할 수 있습니다</span></p>
-          <button onClick={() => { setShowForm(true); setError('') }}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700">
-            <Plus className="w-4 h-4" /> 팀원 등록
-          </button>
+          <div className="flex items-center gap-2">
+            <PdfButton
+              filename="팀원목록"
+              contentId="team-content"
+              onBeforeExport={() => {
+                setExpandedTaskUsers(new Set(users.map(u => u.id)))
+              }}
+            />
+            <button onClick={() => { setShowForm(true); setError('') }}
+              className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700">
+              <Plus className="w-4 h-4" /> 팀원 등록
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">

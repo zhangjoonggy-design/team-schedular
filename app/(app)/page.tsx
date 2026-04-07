@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { formatDate, STATUS_LABELS, VACATION_TYPE_LABELS } from '@/lib/utils'
 import Link from 'next/link'
+import { PdfButton } from '@/components/shared/PdfButton'
 
 async function getDashboardData() {
   const [projects, issues, issueCount, riskCount, vacations, tasks, members] = await Promise.all([
@@ -84,7 +85,10 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header title="대시보드" />
-      <main className="flex-1 p-4 md:p-6 space-y-6">
+      <main id="dashboard-content" className="flex-1 p-4 md:p-6 space-y-6">
+        <div className="flex justify-end">
+          <PdfButton filename="대시보드" contentId="dashboard-content" />
+        </div>
         {/* 요약 카드 */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <div className="bg-white rounded-xl p-4 border border-gray-200">
