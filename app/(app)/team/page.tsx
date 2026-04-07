@@ -11,12 +11,12 @@ const POSITION_OPTIONS = [
   { value: '', label: '선택 안 함' },
   { value: '프로젝트 PM', label: '프로젝트 PM' },
   { value: '현업 PM',    label: '현업 PM' },
+  { value: 'SM운영직원', label: 'SM운영직원' },
   { value: '개발 PL',   label: '개발 PL' },
   { value: '개발자',    label: '개발자' },
   { value: '디자이너',  label: '디자이너' },
   { value: '퍼블',      label: '퍼블' },
   { value: '기획',      label: '기획' },
-  { value: 'SM운영직원',    label: 'SM운영직원' },
 ]
 
 const POSITION_COLORS: Record<string, string> = {
