@@ -321,6 +321,7 @@ export default function TeamPage() {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
   const [expandedTaskUsers, setExpandedTaskUsers] = useState<Set<string>>(new Set())
   const [form, setForm] = useState<FormState>(DEFAULT_FORM)
+  const [positionFilter, setPositionFilter] = useState('')
 
   const toggleExpandedTasks = (userId: string) => {
     setExpandedTaskUsers((prev) => {
@@ -434,11 +435,28 @@ export default function TeamPage() {
           </button>
         </div>
 
+        <div className="flex flex-wrap gap-2">
+          {[{ value: '', label: '전체' }, ...POSITION_OPTIONS.filter(o => o.value)].map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setPositionFilter(opt.value)}
+              className={cn(
+                'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+                positionFilter === opt.value
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-300'
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="text-center py-12 text-gray-400">로딩중...</div>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
-            {users.map((user) => {
+            {users.filter(u => !positionFilter || u.position === positionFilter).map((user) => {
               const activeTasks = user.taskAssignments ?? []
               const overdueTasks = activeTasks.filter(a => a.task.dueDate && new Date(a.task.dueDate) < today)
               return (
